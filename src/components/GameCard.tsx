@@ -28,6 +28,7 @@ interface GameCardProps {
   onOpenRatingModal: (game: Game) => void;
   onOpenVipModal: (game: Game) => void;
   isUserVip: boolean;
+  onShareHighScore?: (game: Game) => void;
 }
 
 export function GameCard({ 
@@ -38,7 +39,8 @@ export function GameCard({
   onToggleFavorite,
   onOpenRatingModal,
   onOpenVipModal,
-  isUserVip
+  isUserVip,
+  onShareHighScore
 }: GameCardProps) {
   const [imgError, setImgError] = useState(false);
   const [showDetails, setShowDetails] = useState(false);

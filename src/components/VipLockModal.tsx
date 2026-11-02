@@ -287,6 +287,11 @@ export const VipLockModal: React.FC<VipLockModalProps> = ({
           </div>
         )}
 
+        {/* Legal Terms of Agreement Notice */}
+        <div className="mt-4 pt-3 border-t border-slate-800/80 text-center text-[10px] text-slate-500">
+          VIP access and Penguin Point redemptions are subject to Haris Game Center's Terms of Agreement &amp; Virtual Currency Policy.
+        </div>
+
       </div>
     </div>
   );

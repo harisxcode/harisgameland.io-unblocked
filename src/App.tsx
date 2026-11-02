@@ -16,9 +16,16 @@ import { RatingModal } from './components/RatingModal';
 import { RecommendGameModal } from './components/RecommendGameModal';
 import { DeveloperHub } from './components/DeveloperHub';
 import { CommunityRecommendationsSection } from './components/CommunityRecommendationsSection';
+import { ArcadeChatSection } from './components/ArcadeChatSection';
+import { HighScoreShareModal } from './components/HighScoreShareModal';
+import { GameGrindersDiscordModal } from './components/GameGrindersDiscordModal';
 import { Footer } from './components/Footer';
 import { IntroScreen } from './components/IntroScreen';
 import { MusicStreamPlayerModal } from './components/MusicStreamPlayerModal';
+import { LegalModal, LegalTab } from './components/LegalModal';
+import { MandatoryTermsModal } from './components/MandatoryTermsModal';
+import { SidebarMenu } from './components/SidebarMenu';
+import { OwnerAdminPanelModal } from './components/OwnerAdminPanelModal';
 
 import { AuthEntry } from './components/AuthEntry';
 import { PabloMascot } from './components/PabloMascot';
@@ -47,7 +54,10 @@ import {
   ShieldCheck,
   Zap,
   Crown,
-  Trophy
+  Trophy,
+  Menu,
+  PanelLeftOpen,
+  Mail
 } from 'lucide-react';
 
 export default function App() {
@@ -84,6 +94,31 @@ export default function App() {
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
   const [isRecommendModalOpen, setIsRecommendModalOpen] = useState(false);
   const [isMusicStreamModalOpen, setIsMusicStreamModalOpen] = useState(false);
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [legalInitialTab, setLegalInitialTab] = useState<LegalTab>('privacy');
+  const [isHighScoreModalOpen, setIsHighScoreModalOpen] = useState(false);
+  const [targetHighScoreGame, setTargetHighScoreGame] = useState<Game | null>(null);
+  const [isDiscordModalOpen, setIsDiscordModalOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('haris_sidebar_open');
+      if (saved !== null) return saved === 'true';
+      return typeof window !== 'undefined' && window.innerWidth >= 1024;
+    } catch {
+      return true;
+    }
+  });
+  const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+  const [externalChatComment, setExternalChatComment] = useState<{ text: string; gameTitle?: string; highScoreBadge?: string } | null>(null);
+  const [hasAgreedTerms, setHasAgreedTerms] = useState<boolean>(() => {
+    const active = getActiveUser();
+    if (!active) return false;
+    try {
+      return localStorage.getItem(`haris_rules_agreed_${active.username}`) === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const [musicStreamUrl, setMusicStreamUrl] = useState<string>(() => {
     try {
@@ -150,6 +185,15 @@ export default function App() {
     setIsAdModalOpen(true);
   };
 
+  const handleShareHighScore = (game: Game) => {
+    setTargetHighScoreGame(game);
+    setIsHighScoreModalOpen(true);
+  };
+
+  const handlePostBragToChat = (text: string, gameTitle: string, scoreBadge: string) => {
+    setExternalChatComment({ text, gameTitle, highScoreBadge: scoreBadge });
+  };
+
   const handleSaveRating = (stars: number, _review: string, gameId?: string) => {
     if (gameId) {
       setGames(prev => {
@@ -172,6 +216,14 @@ export default function App() {
   const handleSignOut = () => {
     setActiveUser(null);
     setCurrentUser(null);
+    setHasAgreedTerms(false);
+  };
+
+  const handleLoginSuccess = (user: UserAccount) => {
+    setCurrentUser(user);
+    // Explicit user request: show up as soon as someone logs into this website
+    const alreadyAgreed = localStorage.getItem(`haris_rules_agreed_${user.username}`) === 'true';
+    setHasAgreedTerms(alreadyAgreed);
   };
 
   // Game execution handler
@@ -264,7 +316,7 @@ export default function App() {
 
   // Gated View: If user is not signed in, show Auth Gate
   if (!currentUser) {
-    return <AuthEntry onLoginSuccess={(u) => setCurrentUser(u)} />;
+    return <AuthEntry onLoginSuccess={handleLoginSuccess} />;
   }
 
   return (
@@ -280,29 +332,89 @@ export default function App() {
         onExit={() => setIsStealthActive(false)}
       />
 
-      {/* Sticky Main Navigation */}
-      <Navbar 
+      {/* Mandatory Legal Terms & Conduct Rules Modal (Appears as soon as someone logs into this website) */}
+      <MandatoryTermsModal
+        isOpen={!hasAgreedTerms}
         currentUser={currentUser}
-        onOpenPabloHub={() => setIsPabloHubOpen(true)}
-        onTriggerStealth={() => setIsStealthActive(true)}
-        snowEnabled={snowEnabled}
-        onToggleSnow={() => setSnowEnabled(!snowEnabled)}
-        onSignOut={handleSignOut}
-        onOpenRecommendModal={() => setIsRecommendModalOpen(true)}
-        onOpenRatingModal={() => setIsRatingModalOpen(true)}
-        onOpenVipModal={() => {
-          setTargetVipGame(games.find(g => g.isVipExclusive) || games[0]);
-          setIsVipModalOpen(true);
+        onAgreeAndContinue={() => {
+          setHasAgreedTerms(true);
+          try {
+            if (currentUser) {
+              localStorage.setItem(`haris_rules_agreed_${currentUser.username}`, 'true');
+            }
+          } catch {}
         }}
+        onSignOut={handleSignOut}
       />
 
-      <main className="flex-1">
+      {/* Floating Sidebar Menu Launcher Tab (When sidebar is collapsed, docked on left edge) */}
+      {!isSidebarOpen && (
+        <div className="fixed left-0 top-1/2 -translate-y-1/2 z-30 hidden sm:flex flex-col items-start pointer-events-auto animate-fadeIn">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="flex items-center gap-2.5 px-3.5 py-3 rounded-r-2xl bg-gradient-to-r from-[#091535] via-[#0c1e48] to-[#071024] hover:from-[#0d2254] hover:to-[#091838] border-y border-r-2 border-cyan-400 text-cyan-300 hover:text-white shadow-2xl shadow-cyan-950/80 transition-all transform hover:translate-x-1.5 cursor-pointer group"
+            title="Expand Left Sidebar (Contact, Admin & Terms)"
+          >
+            <PanelLeftOpen className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
+            <div className="text-left">
+              <span className="font-display font-black text-xs text-white block">Sidebar Menu</span>
+              <span className="text-[10px] text-cyan-300 font-mono font-bold block -mt-0.5">Contact · Admin · Rules</span>
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* Mobile Floating Quick Button (Bottom Left) */}
+      {!isSidebarOpen && (
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          className="sm:hidden fixed left-4 bottom-20 z-40 p-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-amber-500 text-slate-950 shadow-2xl shadow-black font-black flex items-center justify-center cursor-pointer border-2 border-cyan-300 animate-bounce"
+          title="Open Sidebar Menu (Contact, Admin & Terms)"
+        >
+          <Menu className="w-5 h-5 text-slate-950" />
+        </button>
+      )}
+
+      {/* Main Browsable Content Wrapper: smoothly shifts with md:pl-80 when Left Sidebar is open */}
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'md:pl-80' : 'pl-0'}`}>
+        {/* Sticky Main Navigation */}
+        <Navbar 
+          currentUser={currentUser}
+          onOpenSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          isSidebarOpen={isSidebarOpen}
+          onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
+          onOpenPabloHub={() => setIsPabloHubOpen(true)}
+          onTriggerStealth={() => setIsStealthActive(true)}
+          snowEnabled={snowEnabled}
+          onToggleSnow={() => setSnowEnabled(!snowEnabled)}
+          onSignOut={handleSignOut}
+          onOpenRecommendModal={() => setIsRecommendModalOpen(true)}
+          onOpenRatingModal={() => setIsRatingModalOpen(true)}
+          onOpenVipModal={() => {
+            setTargetVipGame(games.find(g => g.isVipExclusive) || games[0]);
+            setIsVipModalOpen(true);
+          }}
+          onOpenLegal={(tab) => {
+            setLegalInitialTab(tab || 'privacy');
+            setIsLegalModalOpen(true);
+          }}
+          onOpenDiscordModal={() => setIsDiscordModalOpen(true)}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          games={games}
+          onSelectGame={handlePlayGame}
+        />
+
+        <main className="flex-1">
         {/* Hero Section */}
         <HeroSection 
           games={games}
           onOpenRecommendModal={() => setIsRecommendModalOpen(true)}
           onOpenPabloHub={() => setIsPabloHubOpen(true)}
           onOpenRatingModal={() => setIsRatingModalOpen(true)}
+          onOpenDiscord={() => setIsDiscordModalOpen(true)}
+          onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
+          onOpenSidebar={() => setIsSidebarOpen(true)}
         />
 
         {/* Pablo Unblocked Announcement Banner */}
@@ -335,6 +447,18 @@ export default function App() {
             </div>
           </div>
         </section>
+
+        {/* Starting Community Lounge: Comment & Submit High Scores Area */}
+        <ArcadeChatSection
+          currentUserUsername={currentUser?.username || 'GuestGrinder'}
+          currentUserAvatar={currentUser?.avatar || '🐧'}
+          isVip={!!currentUser?.isVip}
+          games={games}
+          onPlayGame={handlePlayGame}
+          onOpenDiscordModal={() => setIsDiscordModalOpen(true)}
+          onOpenHighScoreModal={handleShareHighScore}
+          externalNewComment={externalChatComment}
+        />
 
         {/* Main Catalog View */}
         <section id="games" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -445,6 +569,7 @@ export default function App() {
                             setIsVipModalOpen(true);
                           }}
                           isUserVip={!!currentUser?.isVip}
+                          onShareHighScore={handleShareHighScore}
                         />
                       ))}
 
@@ -533,6 +658,7 @@ export default function App() {
                               setIsVipModalOpen(true);
                             }}
                             isUserVip={!!currentUser?.isVip}
+                            onShareHighScore={handleShareHighScore}
                           />
                         ))}
                       </div>
@@ -554,6 +680,7 @@ export default function App() {
                       setRatingTargetGame(game);
                       setIsRatingModalOpen(true);
                     }}
+                    onShareHighScore={handleShareHighScore}
                   />
                 ))}
               </div>
@@ -576,6 +703,7 @@ export default function App() {
                       setIsVipModalOpen(true);
                     }}
                     isUserVip={!!currentUser?.isVip}
+                    onShareHighScore={handleShareHighScore}
                   />
                 ))}
               </div>
@@ -621,8 +749,16 @@ export default function App() {
         affectionLevel={currentUser.pabloAffection || 25}
       />
 
-      {/* Quiet Footer */}
-      <Footer />
+      {/* Footer with Legal, Terms, Privacy, DMCA and School Safety */}
+      <Footer 
+        onOpenLegal={(tab) => {
+          setLegalInitialTab(tab || 'privacy');
+          setIsLegalModalOpen(true);
+        }}
+        onOpenPabloHub={() => setIsPabloHubOpen(true)}
+        onOpenDiscord={() => setIsDiscordModalOpen(true)}
+      />
+      </div>
 
       {/* Game Runner Modal */}
       <GameModal
@@ -631,6 +767,9 @@ export default function App() {
         onGamePlayed={handleGamePlayedSession}
         allGames={games}
         onSelectGame={handlePlayGame}
+        onShareHighScore={handleShareHighScore}
+        onOpenDiscord={() => setIsDiscordModalOpen(true)}
+        currentUser={currentUser}
       />
 
       {/* Pablo Arcade Hub Modal */}
@@ -689,6 +828,64 @@ export default function App() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAddGame={handleAddGame}
+      />
+
+      {/* Legal, Privacy Policy & Terms of Agreement Modal */}
+      <LegalModal
+        isOpen={isLegalModalOpen}
+        onClose={() => setIsLegalModalOpen(false)}
+        initialTab={legalInitialTab}
+      />
+
+      {/* All-Time High Score Share & Brag Modal */}
+      <HighScoreShareModal
+        isOpen={isHighScoreModalOpen}
+        onClose={() => {
+          setIsHighScoreModalOpen(false);
+          setTargetHighScoreGame(null);
+        }}
+        game={targetHighScoreGame}
+        currentUserUsername={currentUser?.username}
+        currentUserAvatar={currentUser?.avatar}
+        onPostToChat={handlePostBragToChat}
+        onOpenDiscordModal={() => setIsDiscordModalOpen(true)}
+      />
+
+      {/* Official Game Grinders Discord Server Modal */}
+      <GameGrindersDiscordModal
+        isOpen={isDiscordModalOpen}
+        onClose={() => setIsDiscordModalOpen(false)}
+      />
+
+      {/* Sidebar Navigation & Control Drawer (Admin Panel & Terms Option) */}
+      <SidebarMenu
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        currentUser={currentUser}
+        onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
+        onOpenLegal={(tab) => {
+          setLegalInitialTab(tab || 'terms');
+          setIsLegalModalOpen(true);
+        }}
+        onOpenPabloHub={() => setIsPabloHubOpen(true)}
+        onOpenDiscordModal={() => setIsDiscordModalOpen(true)}
+        onTriggerStealth={() => setIsStealthActive(true)}
+        snowEnabled={snowEnabled}
+        onToggleSnow={() => setSnowEnabled(!snowEnabled)}
+        onSignOut={handleSignOut}
+      />
+
+      {/* Owner Admin Analytics & Graphs Panel (Haris Only) */}
+      <OwnerAdminPanelModal
+        isOpen={isAdminPanelOpen}
+        onClose={() => setIsAdminPanelOpen(false)}
+        currentUser={currentUser}
+        games={games}
+        onOpenLegal={() => {
+          setIsAdminPanelOpen(false);
+          setLegalInitialTab('terms');
+          setIsLegalModalOpen(true);
+        }}
       />
     </div>
   );

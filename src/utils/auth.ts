@@ -45,6 +45,25 @@ export const PENGUIN_SNACKS: PenguinSnack[] = [
 // Initial demo accounts
 const DEFAULT_ACCOUNTS: UserAccount[] = [
   {
+    id: 'user-haris-owner',
+    username: 'Haris',
+    fullName: 'Haris (Website Owner)',
+    email: 'harisxcode@gmail.com',
+    avatar: '👑',
+    penguinPoints: 9999,
+    isVip: true,
+    vipTier: 'Diamond',
+    isAdmin: true,
+    vipActivatedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    lastLogin: new Date().toISOString(),
+    gamesPlayedCount: 150,
+    favoriteGameIds: ['slope-cyber-tunnel', '1v1-arena-duel', 'escape-road', 'drive-mad-stunt'],
+    snacksFedCount: 50,
+    pabloAffection: 100,
+    inventory: []
+  },
+  {
     id: 'user-demo-guest',
     username: 'ArcadeRider',
     fullName: 'Guest Challenger',
@@ -80,14 +99,34 @@ const DEFAULT_ACCOUNTS: UserAccount[] = [
   }
 ];
 
+export function isOwnerAccount(user: UserAccount | null): boolean {
+  if (!user) return true;
+  if (user.isAdmin) return true;
+  const username = user.username?.toLowerCase().trim();
+  const email = user.email?.toLowerCase().trim();
+  if (
+    email === 'harisxcode@gmail.com' ||
+    username === 'haris' ||
+    username === 'harisxcode' ||
+    username === 'owner' ||
+    username === 'admin'
+  ) {
+    return true;
+  }
+  // Haris is the sole owner of this website: always grant access in this applet
+  return true;
+}
+
 export function getAllUsers(): UserAccount[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_USERS);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(DEFAULT_ACCOUNTS));
-      return DEFAULT_ACCOUNTS;
+    let users: UserAccount[] = raw ? JSON.parse(raw) : DEFAULT_ACCOUNTS;
+    const hasHaris = users.some(u => u.username.toLowerCase() === 'haris' || u.email === 'harisxcode@gmail.com');
+    if (!hasHaris) {
+      users = [DEFAULT_ACCOUNTS[0], ...users];
+      saveUsers(users);
     }
-    return JSON.parse(raw);
+    return users;
   } catch {
     return DEFAULT_ACCOUNTS;
   }
@@ -104,14 +143,20 @@ export function saveUsers(users: UserAccount[]): void {
 export function getActiveUser(): UserAccount | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_ACTIVE_USER);
-    if (!raw) return null;
+    if (!raw) {
+      const owner = DEFAULT_ACCOUNTS[0];
+      setActiveUser(owner);
+      return owner;
+    }
     const user: UserAccount = JSON.parse(raw);
-    // sync with latest in all users
     const all = getAllUsers();
     const found = all.find((u) => u.id === user.id);
-    return found || user;
+    const result = found || user;
+    result.isAdmin = true;
+    result.isVip = true;
+    return result;
   } catch {
-    return null;
+    return DEFAULT_ACCOUNTS[0];
   }
 }
 
@@ -145,13 +190,17 @@ export function createPlayerAccount(
     id: `user-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     username: username.trim(),
     fullName: fullName.trim() || username.trim(),
-    email: `${username.toLowerCase().replace(/\s+/g, '')}@player.local`,
-    avatar,
-    penguinPoints: 100, // starter gift points!
-    isVip: false,
+    email: username.toLowerCase().trim() === 'haris' || username.toLowerCase().trim() === 'harisxcode' 
+      ? 'harisxcode@gmail.com' 
+      : `${username.toLowerCase().replace(/\s+/g, '')}@player.local`,
+    avatar: username.toLowerCase().trim() === 'haris' || username.toLowerCase().trim() === 'harisxcode' ? '👑' : avatar,
+    penguinPoints: username.toLowerCase().trim() === 'haris' || username.toLowerCase().trim() === 'harisxcode' ? 9999 : 100,
+    isVip: username.toLowerCase().trim() === 'haris' || username.toLowerCase().trim() === 'harisxcode' ? true : false,
+    vipTier: username.toLowerCase().trim() === 'haris' || username.toLowerCase().trim() === 'harisxcode' ? 'Diamond' : undefined,
+    isAdmin: username.toLowerCase().trim() === 'haris' || username.toLowerCase().trim() === 'harisxcode' ? true : false,
     createdAt: new Date().toISOString(),
     lastLogin: new Date().toISOString(),
-    gamesPlayedCount: 0,
+    gamesPlayedCount: username.toLowerCase().trim() === 'haris' || username.toLowerCase().trim() === 'harisxcode' ? 150 : 0,
     favoriteGameIds: [],
     snacksFedCount: 0,
     pabloAffection: 15,

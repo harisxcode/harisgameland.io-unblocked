@@ -1,4 +1,4 @@
-import { Github, Gamepad2, ArrowUpRight, ShieldCheck, Zap, Crown, Sparkles, Star } from 'lucide-react';
+import { Github, Gamepad2, ArrowUpRight, ShieldCheck, Zap, Crown, Sparkles, Star, Users, MessageSquare, Menu } from 'lucide-react';
 import { Game, heroBanner, pabloMascotImg } from '../data/games';
 
 const GAME_CENTER_REPO = 'https://github.com/harisxcode/haris-game-center';
@@ -8,13 +8,19 @@ interface HeroSectionProps {
   onOpenPabloHub?: () => void;
   onOpenRecommendModal?: () => void;
   onOpenRatingModal?: () => void;
+  onOpenDiscord?: () => void;
+  onOpenAdminPanel?: () => void;
+  onOpenSidebar?: () => void;
 }
 
 export function HeroSection({ 
   games, 
   onOpenPabloHub, 
   onOpenRecommendModal,
-  onOpenRatingModal 
+  onOpenRatingModal,
+  onOpenDiscord,
+  onOpenAdminPanel,
+  onOpenSidebar
 }: HeroSectionProps) {
   const liveCount = games.filter((g) => g.status === 'live').length;
   const vipCount = games.filter((g) => g.isVipExclusive).length;
@@ -95,6 +101,14 @@ export function HeroSection({
                 <span>Explore All Games</span>
               </a>
 
+              <a
+                href="#arcade-chat-lounge"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-purple-950/70 hover:bg-purple-900/70 text-purple-200 hover:text-white border border-purple-500/40 font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-md shadow-purple-950/40"
+              >
+                <MessageSquare className="w-4 h-4 text-purple-400" />
+                <span>💬 Community Comments &amp; Chat</span>
+              </a>
+
               {onOpenPabloHub && (
                 <button
                   onClick={onOpenPabloHub}
@@ -111,6 +125,38 @@ export function HeroSection({
                 >
                   <Sparkles className="w-4 h-4 text-amber-400" />
                   <span>Request Game</span>
+                </button>
+              )}
+
+              {onOpenDiscord && (
+                <button
+                  onClick={onOpenDiscord}
+                  className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-[#5865F2]/20 hover:bg-[#5865F2]/30 text-[#c7d2fe] hover:text-white border border-[#5865F2]/40 font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-sm shadow-[#5865F2]/20"
+                >
+                  <Users className="w-4 h-4 text-[#5865F2]" />
+                  <span>Game Grinders (Discord)</span>
+                </button>
+              )}
+
+              {onOpenAdminPanel && (
+                <button
+                  onClick={onOpenAdminPanel}
+                  className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:brightness-110 text-slate-950 font-black text-xs sm:text-sm transition-all cursor-pointer shadow-md shadow-amber-500/25"
+                  title="Open Owner Admin Panel"
+                >
+                  <Crown className="w-4 h-4 fill-slate-950" />
+                  <span>👑 Owner Admin Panel</span>
+                </button>
+              )}
+
+              {onOpenSidebar && (
+                <button
+                  onClick={onOpenSidebar}
+                  className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-cyan-950/70 hover:bg-cyan-900/70 border border-cyan-500/40 text-cyan-300 hover:text-white font-bold text-xs sm:text-sm transition-all cursor-pointer"
+                  title="Open Sidebar Menu"
+                >
+                  <Menu className="w-4 h-4 text-cyan-400" />
+                  <span>Sidebar Menu</span>
                 </button>
               )}
             </div>

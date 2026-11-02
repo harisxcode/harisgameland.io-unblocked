@@ -12,8 +12,9 @@ import {
   Crown
 } from 'lucide-react';
 import { UserAccount } from '../types';
-import { getAllUsers, setActiveUser, createPlayerAccount } from '../utils/auth';
+import { getAllUsers, setActiveUser, createPlayerAccount, isOwnerAccount } from '../utils/auth';
 import pabloMascotImg from '../assets/images/retro_pablo_mascot_1793055166374.jpg';
+import { LegalModal, LegalTab } from './LegalModal';
 
 interface AuthEntryProps {
   onLoginSuccess: (user: UserAccount) => void;
@@ -27,6 +28,8 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
   const [fullName, setFullName] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('🐧');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [legalTab, setLegalTab] = useState<LegalTab>('terms');
 
   const existingUsers = getAllUsers();
 
@@ -180,26 +183,42 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
                   Quick Select Profile:
                 </p>
                 <div className="flex flex-col gap-1.5">
-                  {existingUsers.slice(0, 2).map((user) => (
-                    <button
-                      key={user.id}
-                      onClick={() => handleSignIn(user)}
-                      className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-950/60 hover:bg-cyan-950/40 border border-slate-800/80 hover:border-cyan-500/40 transition-colors text-left group"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-lg">{user.avatar}</span>
-                        <div>
-                          <div className="text-xs font-bold text-white group-hover:text-cyan-300">
-                            {user.username}
-                          </div>
-                          <div className="text-[10px] text-slate-400">
-                            {user.penguinPoints} pts {user.isVip ? '· VIP 👑' : ''}
+                  {existingUsers.slice(0, 3).map((user) => {
+                    const isOwner = isOwnerAccount(user);
+                    return (
+                      <button
+                        key={user.id}
+                        onClick={() => handleSignIn(user)}
+                        className={`flex items-center justify-between px-3 py-2 rounded-xl border transition-colors text-left group ${
+                          isOwner 
+                            ? 'bg-amber-950/40 hover:bg-amber-900/50 border-amber-500/50 shadow-sm shadow-amber-500/20' 
+                            : 'bg-slate-950/60 hover:bg-cyan-950/40 border-slate-800/80 hover:border-cyan-500/40'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-lg">{user.avatar}</span>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-bold text-white group-hover:text-cyan-300">
+                                {user.username}
+                              </span>
+                              {isOwner && (
+                                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-400 text-slate-950 font-black">
+                                  OWNER
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-slate-400">
+                              {isOwner ? 'harisxcode@gmail.com' : `${user.penguinPoints} pts ${user.isVip ? '· VIP 👑' : ''}`}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <span className="text-[11px] font-semibold text-cyan-400">Play →</span>
-                    </button>
-                  ))}
+                        <span className={`text-[11px] font-semibold ${isOwner ? 'text-amber-400' : 'text-cyan-400'}`}>
+                          {isOwner ? 'Admin →' : 'Play →'}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -256,19 +275,45 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
         )}
 
         {/* Guest Access Fallback */}
-        <div className="mt-5 pt-4 border-t border-slate-800/80 text-center">
+        <div className="mt-5 pt-4 border-t border-slate-800/80 text-center space-y-3">
           <button
             onClick={handleQuickGuest}
             className="text-xs text-slate-400 hover:text-cyan-300 transition-colors font-medium underline underline-offset-4 cursor-pointer"
           >
             Or Continue with Instant Guest Pass (1-Click)
           </button>
+
+          {/* Website Rules & Terms Notice */}
+          <div className="p-3 rounded-2xl bg-slate-950/90 border border-cyan-500/30 text-left space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
+              <span>⚖️ Mandatory Website Terms &amp; Rules:</span>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              Haris Game Center is a <strong>friendly learning website</strong>. <strong>NO cyberbullying</strong> is allowed. Everyone must be nice or an automated complaint will be dispatched to school admins (active cameras &amp; monitors active). You will be required to review and accept the official rules upon login.
+            </p>
+            <div className="pt-1 flex items-center justify-between text-[11px]">
+              <button
+                type="button"
+                onClick={() => { setLegalTab('terms'); setIsLegalModalOpen(true); }}
+                className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2 cursor-pointer font-bold"
+              >
+                Read Legal Terms &amp; Rules →
+              </button>
+              <button
+                type="button"
+                onClick={() => { setLegalTab('privacy'); setIsLegalModalOpen(true); }}
+                className="text-slate-400 hover:text-slate-200 underline underline-offset-2 cursor-pointer"
+              >
+                Privacy Policy
+              </button>
+            </div>
+          </div>
         </div>
 
       </div>
 
       {/* Safety & Performance Notice Footer */}
-      <div className="relative z-10 mt-6 flex items-center gap-4 text-[11px] font-mono text-slate-500">
+      <div className="relative z-10 mt-6 flex flex-wrap items-center justify-center gap-4 text-[11px] font-mono text-slate-500">
         <span className="flex items-center gap-1">
           <Zap className="w-3.5 h-3.5 text-cyan-400" /> 0% Server Lag
         </span>
@@ -280,7 +325,22 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
         <span className="flex items-center gap-1">
           <Crown className="w-3.5 h-3.5 text-amber-400" /> VIP Perks
         </span>
+        <span>•</span>
+        <button
+          type="button"
+          onClick={() => { setLegalTab('dmca'); setIsLegalModalOpen(true); }}
+          className="hover:text-slate-300 underline underline-offset-2 cursor-pointer"
+        >
+          DMCA Notice
+        </button>
       </div>
+
+      {/* Embedded Legal Modal */}
+      <LegalModal
+        isOpen={isLegalModalOpen}
+        onClose={() => setIsLegalModalOpen(false)}
+        initialTab={legalTab}
+      />
     </div>
   );
 };

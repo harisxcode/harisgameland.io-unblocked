@@ -56,6 +56,7 @@ export interface Game {
   iframeUrl?: string;
   builtInHtml?: string;
   hypeAd?: GameHypeAd;
+  highScoreUnit?: string; // 'm', 'pts', 'cookies', 'wins', '%', etc.
 }
 
 export interface UserAccount {
@@ -112,3 +113,30 @@ export interface StealthConfig {
   disguiseType: DisguiseType;
   panicKey: string;
 }
+
+export interface GameHighScore {
+  gameId: string;
+  gameTitle: string;
+  score: number;
+  unit: string;
+  playerUsername: string;
+  playerAvatar: string;
+  achievedAt: string;
+  formattedScore: string;
+}
+
+export interface ChatComment {
+  id: string;
+  username: string;
+  avatar: string;
+  text: string;
+  timestamp: string;
+  gameId?: string;
+  gameTitle?: string;
+  highScoreBadge?: string;
+  isVip?: boolean;
+  likes: number;
+  likedByMe?: boolean;
+  pinned?: boolean;
+}
+

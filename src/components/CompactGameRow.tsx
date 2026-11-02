@@ -9,6 +9,7 @@ interface CompactGameRowProps {
   isFavorite: boolean;
   onToggleFavorite: (gameId: string) => void;
   onOpenRatingModal?: (game: Game) => void;
+  onShareHighScore?: (game: Game) => void;
 }
 
 export function CompactGameRow({ 
@@ -17,7 +18,8 @@ export function CompactGameRow({
   onPreviewAd, 
   isFavorite, 
   onToggleFavorite,
-  onOpenRatingModal 
+  onOpenRatingModal,
+  onShareHighScore
 }: CompactGameRowProps) {
   const [imgError, setImgError] = useState(false);
 
