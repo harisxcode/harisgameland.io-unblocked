@@ -15,9 +15,11 @@ import {
   Crown,
   Eye,
   Zap,
-  Coins
+  Coins,
+  Mail
 } from 'lucide-react';
-import { Game } from '../types';
+import { Game, VipTierLevel } from '../types';
+import { hasVipTierAccess } from '../utils/auth';
 
 interface GameCardProps {
   game: Game;
@@ -28,6 +30,7 @@ interface GameCardProps {
   onOpenRatingModal: (game: Game) => void;
   onOpenVipModal: (game: Game) => void;
   isUserVip: boolean;
+  userVipTier?: VipTierLevel;
   onShareHighScore?: (game: Game) => void;
 }
 
@@ -40,12 +43,15 @@ export function GameCard({
   onOpenRatingModal,
   onOpenVipModal,
   isUserVip,
+  userVipTier,
   onShareHighScore
 }: GameCardProps) {
   const [imgError, setImgError] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
-  const isLocked = game.isVipExclusive && !isUserVip;
+  const effectiveTier = userVipTier || (isUserVip ? 'regular' : 'none');
+  const requiredTier = game.vipTierRequired || 'regular';
+  const isLocked = game.isVipExclusive && !hasVipTierAccess(effectiveTier, requiredTier);
 
   const handleGameLaunch = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
@@ -77,6 +83,8 @@ export function GameCard({
           <img
             src={game.thumbnailUrl}
             alt={`${game.title} thumbnail`}
+            loading="lazy"
+            decoding="async"
             referrerPolicy="no-referrer"
             onError={() => setImgError(true)}
             className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
@@ -93,15 +101,27 @@ export function GameCard({
 
         {/* Top Floating Badges: Genre, VIP status & Favorite */}
         <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[10px] font-mono tracking-wide text-cyan-300 bg-slate-950/85 backdrop-blur-sm px-2 py-0.5 rounded-md border border-cyan-500/20">
               {game.genre}
             </span>
 
+            {(game.serverSource === 'Haris Arcade Vault' || game.id.startsWith('gl-')) && (
+              <span className="text-[10px] font-mono tracking-wide text-cyan-300 bg-cyan-950/90 backdrop-blur-sm px-1.5 py-0.5 rounded-md border border-cyan-400/40 font-semibold shadow-xs">
+                🕹️ Arcade Vault
+              </span>
+            )}
+
             {game.isVipExclusive && (
-              <span className="flex items-center gap-1 text-[10px] font-mono font-bold tracking-wider text-amber-300 bg-amber-950/90 border border-amber-500/40 px-2 py-0.5 rounded-md shadow-sm">
-                <Crown className="w-3 h-3 text-amber-400" />
-                <span>VIP</span>
+              <span className={`flex items-center gap-1 text-[10px] font-mono font-bold tracking-wider px-2 py-0.5 rounded-md shadow-sm border ${
+                game.vipTierRequired === 'diamond'
+                  ? 'text-cyan-300 bg-cyan-950/90 border-cyan-400/60'
+                  : game.vipTierRequired === 'gold'
+                  ? 'text-amber-300 bg-amber-950/90 border-amber-400/60'
+                  : 'text-purple-300 bg-purple-950/90 border-purple-400/60'
+              }`}>
+                <Crown className="w-3 h-3" />
+                <span>{game.vipTierRequired ? `${game.vipTierRequired.toUpperCase()} VIP` : 'VIP'}</span>
               </span>
             )}
           </div>
@@ -252,6 +272,30 @@ export function GameCard({
             <div className="pt-1 text-[11px] text-slate-400">
               <span className="text-slate-500">Tech:</span> {game.techStack.join(', ')}
             </div>
+
+            {/* Quick in-drawer feedback and owner email links */}
+            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+              <button
+                type="button"
+                onClick={() => onOpenRatingModal(game)}
+                className="text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1 cursor-pointer"
+                title="Rate game & give feedback"
+              >
+                <Star className="w-3 h-3 fill-amber-400" />
+                <span>Rate Game</span>
+              </button>
+
+              <a
+                href={`https://mail.google.com/mail/?view=cm&fs=1&to=harisxcode@gmail.com&su=${encodeURIComponent(`Arcade Feedback on ${game.title} - Haris Arcade`)}&body=${encodeURIComponent(`Hi Haris,\n\nI am contacting you in person regarding ${game.title} on your arcade website:\n\n`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-rose-400 hover:text-rose-300 font-medium flex items-center gap-1"
+                title="Tell website owner (Haris) in person via Gmail"
+              >
+                <Mail className="w-3 h-3" />
+                <span>Email Owner</span>
+              </a>
+            </div>
           </div>
         )}
 
@@ -262,10 +306,22 @@ export function GameCard({
               {isLocked ? (
                 <button
                   onClick={() => onOpenVipModal(game)}
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-bold text-xs transition-transform transform active:scale-98 shadow-sm shadow-amber-500/20 cursor-pointer"
+                  className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl font-bold text-xs transition-transform transform active:scale-98 shadow-sm cursor-pointer ${
+                    game.vipTierRequired === 'diamond'
+                      ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-slate-950 shadow-cyan-500/20'
+                      : game.vipTierRequired === 'gold'
+                      ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-amber-500/20'
+                      : 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-purple-500/20'
+                  }`}
                 >
-                  <Lock className="w-3.5 h-3.5 fill-slate-950" />
-                  <span>VIP Locked ($5 or 500 Pts)</span>
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>
+                    {game.vipTierRequired === 'diamond'
+                      ? 'Diamond VIP (1000 Pts)'
+                      : game.vipTierRequired === 'gold'
+                      ? 'Gold VIP (750 Pts)'
+                      : 'Regular VIP (500 Pts)'}
+                  </span>
                 </button>
               ) : (
                 <button
@@ -276,6 +332,26 @@ export function GameCard({
                   <span>{game.category === 'other' ? 'Stream' : 'Play Direct'}</span>
                 </button>
               )}
+
+              {/* Rate & Feedback button */}
+              <button
+                onClick={() => onOpenRatingModal(game)}
+                className="p-2 rounded-xl bg-slate-950 hover:bg-slate-900 text-amber-400 hover:text-amber-300 border border-slate-800 transition-colors cursor-pointer"
+                title={`Rate ${game.title} & give feedback`}
+              >
+                <Star className="w-3.5 h-3.5 fill-amber-400/40" />
+              </button>
+
+              {/* Email Owner (Gmail) button */}
+              <a
+                href={`https://mail.google.com/mail/?view=cm&fs=1&to=harisxcode@gmail.com&su=${encodeURIComponent(`Arcade Feedback on ${game.title} - Haris Arcade`)}&body=${encodeURIComponent(`Hi Haris,\n\nI was playing ${game.title} on your arcade website and wanted to tell you in person:\n\n`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-xl bg-slate-950 hover:bg-slate-900 text-rose-400 hover:text-rose-300 border border-slate-800 transition-colors"
+                title="Tell website owner (Haris) in person via Gmail"
+              >
+                <Mail className="w-3.5 h-3.5" />
+              </a>
 
               {/* Details toggle */}
               <button

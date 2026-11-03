@@ -18,7 +18,10 @@ import {
   MessageSquare,
   Search,
   ArrowRight,
-  Gamepad2
+  Gamepad2,
+  Gem,
+  Laptop,
+  Zap
 } from 'lucide-react';
 import { UserAccount } from '../types';
 import { isOwnerAccount } from '../utils/auth';
@@ -45,6 +48,8 @@ interface NavbarProps {
   onSearchChange?: (query: string) => void;
   games?: Game[];
   onSelectGame?: (game: Game) => void;
+  onOpenChromebookModal?: () => void;
+  isChromebookTurbo?: boolean;
 }
 
 export function Navbar({ 
@@ -65,7 +70,9 @@ export function Navbar({
   searchQuery = '',
   onSearchChange,
   games = [],
-  onSelectGame
+  onSelectGame,
+  onOpenChromebookModal,
+  isChromebookTurbo = true
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
@@ -311,6 +318,23 @@ export function Navbar({
             <span>Pablo Hub</span>
           </button>
 
+          {/* School Chromebook 60 FPS Turbo & Unblock Hub */}
+          <button
+            onClick={onOpenChromebookModal}
+            className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border font-mono text-xs font-bold transition-all cursor-pointer ${
+              isChromebookTurbo
+                ? 'bg-cyan-500/15 border-cyan-400 text-cyan-300 shadow-sm shadow-cyan-500/20 hover:bg-cyan-500/25'
+                : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white'
+            }`}
+            title="School Chromebook & Low-Spec Performance Hub (60 FPS Turbo, 0% Lag & Tab Disguise)"
+          >
+            <Laptop className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden md:inline">Chromebook</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 font-bold">
+              60 FPS
+            </span>
+          </button>
+
           {/* Teacher Panic / Stealth Button */}
           <button
             onClick={onTriggerStealth}
@@ -347,21 +371,42 @@ export function Navbar({
                 <span>{points} pts</span>
               </div>
 
-              {/* VIP Status or VIP Upgrade Button */}
-              {isVip ? (
-                <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold font-mono">
-                  <Crown className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                  <span>VIP</span>
-                </div>
-              ) : (
-                <button
-                  onClick={onOpenVipModal}
-                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-bold text-xs hover:brightness-110 transition-all shadow-sm shadow-amber-500/20 cursor-pointer"
-                >
-                  <Crown className="w-3.5 h-3.5 fill-slate-950" />
-                  <span>VIP</span>
-                </button>
-              )}
+              {/* Interactive VIP Button at Top of Screen (Regular, Gold, Diamond) */}
+              <button
+                onClick={onOpenVipModal}
+                className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition-all shadow-sm cursor-pointer group ${
+                  currentUser.vipTier === 'diamond'
+                    ? 'bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-cyan-500/20 border border-cyan-400 text-cyan-300 hover:brightness-125 shadow-cyan-500/20'
+                    : currentUser.vipTier === 'gold'
+                    ? 'bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 border border-amber-400 text-amber-300 hover:brightness-125 shadow-amber-500/20'
+                    : currentUser.vipTier === 'regular' || currentUser.isVip
+                    ? 'bg-gradient-to-r from-purple-500/20 via-indigo-500/20 to-purple-500/20 border border-purple-400 text-purple-300 hover:brightness-125 shadow-purple-500/20'
+                    : 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 hover:brightness-110 shadow-amber-500/20'
+                }`}
+                title="Open VIP Access & Tiers Center (Regular, Gold & Diamond)"
+              >
+                {currentUser.vipTier === 'diamond' ? (
+                  <>
+                    <Gem className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                    <span className="font-mono">DIAMOND VIP</span>
+                  </>
+                ) : currentUser.vipTier === 'gold' ? (
+                  <>
+                    <Crown className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                    <span className="font-mono">GOLD VIP</span>
+                  </>
+                ) : currentUser.vipTier === 'regular' || currentUser.isVip ? (
+                  <>
+                    <Star className="w-3.5 h-3.5 text-purple-400 fill-purple-400" />
+                    <span className="font-mono">REGULAR VIP</span>
+                  </>
+                ) : (
+                  <>
+                    <Crown className="w-3.5 h-3.5 fill-slate-950" />
+                    <span>Get VIP</span>
+                  </>
+                )}
+              </button>
 
               {/* Player Tag & Sign Out */}
               <div className="flex items-center gap-1 pl-0.5">
@@ -420,6 +465,28 @@ export function Navbar({
             )}
           </div>
 
+          {/* Mobile VIP Membership Hub Button */}
+          <button
+            onClick={() => { onOpenVipModal(); setMobileMenuOpen(false); }}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+              currentUser?.vipTier === 'diamond'
+                ? 'bg-cyan-950/60 border-cyan-400 text-cyan-300'
+                : currentUser?.vipTier === 'gold'
+                ? 'bg-amber-950/60 border-amber-400 text-amber-300'
+                : currentUser?.vipTier === 'regular' || currentUser?.isVip
+                ? 'bg-purple-950/60 border-purple-400 text-purple-300'
+                : 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black'
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              <Crown className="w-3.5 h-3.5" />
+              <span>VIP Access Hub (Regular · Gold · Diamond)</span>
+            </span>
+            <span className="font-mono uppercase text-[10px]">
+              {currentUser?.vipTier ? `${currentUser.vipTier} VIP` : 'Upgrade →'}
+            </span>
+          </button>
+
           {/* Open Full Sidebar Menu */}
           <button
             onClick={() => { onOpenSidebar(); setMobileMenuOpen(false); }}
@@ -454,6 +521,17 @@ export function Navbar({
           >
             <span>🛡️ Stealth Panic Disguise</span>
             <span>Activate</span>
+          </button>
+
+          <button
+            onClick={() => { onOpenChromebookModal?.(); setMobileMenuOpen(false); }}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-cyan-950/70 border border-cyan-500/40 text-cyan-300 text-xs font-bold cursor-pointer"
+          >
+            <span className="flex items-center gap-1.5">
+              <Laptop className="w-3.5 h-3.5 text-cyan-400" />
+              <span>School Chromebook &amp; Low-Spec Hub</span>
+            </span>
+            <span className="font-mono text-[10px] text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">60 FPS</span>
           </button>
 
           <button

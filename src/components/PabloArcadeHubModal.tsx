@@ -17,20 +17,24 @@ import {
   Flame, 
   CheckCircle2, 
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  Lock,
+  Crown
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { UserAccount, PenguinSnack } from '../types';
-import { PENGUIN_SNACKS, feedPabloSnack } from '../utils/auth';
+import { PENGUIN_SNACKS, feedPabloSnack, hasVipTierAccess, isOwnerAccount } from '../utils/auth';
 import { PABLO_PROMO_TIPS, PABLO_JOKES } from '../data/pabloHubData';
 import { musicEngine } from '../utils/audioMusic';
 import pabloMascotImg from '../assets/images/retro_pablo_mascot_1793055166374.jpg';
+import { PabloRetroIntro } from './PabloRetroIntro';
 
 interface PabloArcadeHubModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: UserAccount | null;
   onUserUpdated: (user: UserAccount) => void;
+  onOpenVipModal?: (tier?: 'regular' | 'gold' | 'diamond') => void;
 }
 
 type TabType = 'tips' | 'jokes' | 'feed' | 'music';
@@ -39,7 +43,8 @@ export const PabloArcadeHubModal: React.FC<PabloArcadeHubModalProps> = ({
   isOpen,
   onClose,
   currentUser,
-  onUserUpdated
+  onUserUpdated,
+  onOpenVipModal
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('tips');
   const [revealedJokes, setRevealedJokes] = useState<Record<string, boolean>>({});
@@ -47,6 +52,7 @@ export const PabloArcadeHubModal: React.FC<PabloArcadeHubModalProps> = ({
   const [selectedTrack, setSelectedTrack] = useState<string>('chillwave');
   const [isPlayingMusic, setIsPlayingMusic] = useState<boolean>(musicEngine.getIsPlaying());
   const [volume, setVolume] = useState<number>(0.3);
+  const [showRetroIntro, setShowRetroIntro] = useState(false);
 
   if (!isOpen) return null;
 
@@ -159,13 +165,26 @@ export const PabloArcadeHubModal: React.FC<PabloArcadeHubModalProps> = ({
             </div>
           </div>
 
-          {/* Close Button */}
-          <button
-            onClick={onClose}
-            className="absolute top-3 right-3 sm:static p-2 text-slate-400 hover:text-white rounded-full bg-slate-900/60 border border-slate-800 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {/* Watch Retro Intro & Close Button */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowRetroIntro(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 border border-amber-500/40 text-amber-300 font-mono text-xs font-bold transition-all shadow-sm cursor-pointer hover:scale-105"
+              title="Watch Pablo Arcade 'It's in the game!' Retro Intro"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              <span className="hidden sm:inline">Watch Retro Intro</span>
+              <span className="sm:hidden">Intro</span>
+            </button>
+
+            <button
+              onClick={onClose}
+              className="p-2 text-slate-400 hover:text-white rounded-full bg-slate-900/60 border border-slate-800 transition-colors cursor-pointer"
+              title="Close modal"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Tab Navigation */}
@@ -326,19 +345,40 @@ export const PabloArcadeHubModal: React.FC<PabloArcadeHubModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {PENGUIN_SNACKS.map((snack) => {
                   const canAfford = points >= snack.cost;
+                  const isVipLocked = snack.vipTierRequired && !hasVipTierAccess(currentUser?.vipTier, snack.vipTierRequired, isOwnerAccount(currentUser));
+
+                  const tierColor = snack.vipTierRequired === 'regular'
+                    ? 'border-purple-500/40 text-purple-300 bg-purple-500/15'
+                    : snack.vipTierRequired === 'gold'
+                    ? 'border-amber-500/40 text-amber-300 bg-amber-500/15'
+                    : snack.vipTierRequired === 'diamond'
+                    ? 'border-cyan-500/40 text-cyan-300 bg-cyan-500/15'
+                    : '';
+
                   return (
                     <div
                       key={snack.id}
-                      className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 hover:border-rose-500/40 flex flex-col justify-between transition-all"
+                      className={`p-4 rounded-2xl bg-slate-950/70 border flex flex-col justify-between transition-all ${
+                        isVipLocked 
+                          ? 'border-slate-800 opacity-80' 
+                          : 'border-slate-800 hover:border-rose-500/40'
+                      }`}
                     >
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-2xl p-2 bg-slate-900 rounded-xl border border-slate-800">
                             {snack.icon}
                           </span>
-                          <span className="text-xs font-mono font-bold text-amber-300 bg-amber-500/15 px-2.5 py-1 rounded-full border border-amber-500/20">
-                            {snack.cost} Points
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            {snack.vipTierRequired && (
+                              <span className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${tierColor}`}>
+                                {snack.vipTierRequired} VIP
+                              </span>
+                            )}
+                            <span className="text-xs font-mono font-bold text-amber-300 bg-amber-500/15 px-2.5 py-1 rounded-full border border-amber-500/20">
+                              {snack.cost} Pts
+                            </span>
+                          </div>
                         </div>
 
                         <h4 className="text-sm font-bold text-white mb-1">
@@ -349,23 +389,36 @@ export const PabloArcadeHubModal: React.FC<PabloArcadeHubModalProps> = ({
                         </p>
                       </div>
 
-                      <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+                      <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
                         <span className="text-[11px] text-rose-400 font-semibold">
                           +{snack.affectionBoost}% Affection
                         </span>
 
-                        <button
-                          onClick={() => handleFeed(snack)}
-                          disabled={!canAfford}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-                            canAfford
-                              ? 'bg-rose-500 hover:bg-rose-400 text-white shadow-md shadow-rose-500/20 cursor-pointer'
-                              : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                          }`}
-                        >
-                          <Fish className="w-3.5 h-3.5" />
-                          <span>Feed Pablo</span>
-                        </button>
+                        {isVipLocked ? (
+                          <button
+                            onClick={() => {
+                              onClose();
+                              onOpenVipModal?.(snack.vipTierRequired);
+                            }}
+                            className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 cursor-pointer transition-colors"
+                          >
+                            <Lock className="w-3 h-3" />
+                            <span>Unlock {snack.vipTierRequired?.toUpperCase()} VIP</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleFeed(snack)}
+                            disabled={!canAfford}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                              canAfford
+                                ? 'bg-rose-500 hover:bg-rose-400 text-white shadow-md shadow-rose-500/20 cursor-pointer'
+                                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                            }`}
+                          >
+                            <Fish className="w-3.5 h-3.5" />
+                            <span>Feed Pablo</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -466,6 +519,14 @@ export const PabloArcadeHubModal: React.FC<PabloArcadeHubModalProps> = ({
             Close Hub
           </button>
         </div>
+
+        {/* Retro Intro Overlay */}
+        <PabloRetroIntro
+          isOpen={showRetroIntro}
+          onComplete={() => setShowRetroIntro(false)}
+          gameTitle="Pablo Arcade Classic"
+          gameGenre="Retro Arcade"
+        />
 
       </div>
     </div>

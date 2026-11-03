@@ -26,6 +26,8 @@ import { LegalModal, LegalTab } from './components/LegalModal';
 import { MandatoryTermsModal } from './components/MandatoryTermsModal';
 import { SidebarMenu } from './components/SidebarMenu';
 import { OwnerAdminPanelModal } from './components/OwnerAdminPanelModal';
+import { ChromebookModal } from './components/ChromebookModal';
+import { isChromebookTurboActive } from './utils/chromebook';
 
 import { AuthEntry } from './components/AuthEntry';
 import { PabloMascot } from './components/PabloMascot';
@@ -36,7 +38,7 @@ import { SnowfallEffect } from './components/SnowfallEffect';
 
 import { INITIAL_GAMES, Game, UNIVERSAL_CATEGORIES } from './data/games';
 import { UserAccount } from './types';
-import { getActiveUser, setActiveUser, awardPenguinPoints } from './utils/auth';
+import { getActiveUser, setActiveUser, awardPenguinPoints, hasVipTierAccess, isOwnerAccount } from './utils/auth';
 
 import { 
   Gamepad2, 
@@ -57,7 +59,9 @@ import {
   Trophy,
   Menu,
   PanelLeftOpen,
-  Mail
+  Mail,
+  Server,
+  Laptop
 } from 'lucide-react';
 
 export default function App() {
@@ -99,6 +103,8 @@ export default function App() {
   const [isHighScoreModalOpen, setIsHighScoreModalOpen] = useState(false);
   const [targetHighScoreGame, setTargetHighScoreGame] = useState<Game | null>(null);
   const [isDiscordModalOpen, setIsDiscordModalOpen] = useState(false);
+  const [isChromebookModalOpen, setIsChromebookModalOpen] = useState(false);
+  const [isChromebookTurbo, setIsChromebookTurbo] = useState(() => isChromebookTurboActive());
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('haris_sidebar_open');
@@ -161,6 +167,21 @@ export default function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Listen for Chromebook Turbo Mode state changes
+  useEffect(() => {
+    const handleTurboChange = (e: Event) => {
+      const custom = e as CustomEvent;
+      if (custom.detail && typeof custom.detail.enabled === 'boolean') {
+        setIsChromebookTurbo(custom.detail.enabled);
+        if (custom.detail.enabled) {
+          setSnowEnabled(false);
+        }
+      }
+    };
+    window.addEventListener('haris_turbo_mode_changed', handleTurboChange);
+    return () => window.removeEventListener('haris_turbo_mode_changed', handleTurboChange);
   }, []);
 
   // Sync favorites
@@ -228,11 +249,15 @@ export default function App() {
 
   // Game execution handler
   const handlePlayGame = (game: Game) => {
-    // Check VIP requirement
-    if (game.isVipExclusive && !currentUser?.isVip) {
-      setTargetVipGame(game);
-      setIsVipModalOpen(true);
-      return;
+    // Check VIP requirement against player's tier level
+    if (game.isVipExclusive) {
+      const isOwner = isOwnerAccount(currentUser);
+      const requiredTier = game.vipTierRequired || 'regular';
+      if (!hasVipTierAccess(currentUser?.vipTier, requiredTier, isOwner)) {
+        setTargetVipGame(game);
+        setIsVipModalOpen(true);
+        return;
+      }
     }
 
     if (game.id === 'music-stream') {
@@ -258,7 +283,9 @@ export default function App() {
     const result = games.filter(game => {
       // Category filter
       if (activeCategory !== 'all') {
-        if (activeCategory === 'recommended') {
+        if (activeCategory === 'vault' || (activeCategory as string) === 'server1') {
+          if (game.serverSource !== 'Haris Arcade Vault' && !game.id.startsWith('gl-')) return false;
+        } else if (activeCategory === 'recommended') {
           if (!game.isFeatured && !game.isPopular && game.rating < 4.8) return false;
         } else if (activeCategory === 'favorites') {
           if (!favorites.includes(game.id)) return false;
@@ -301,6 +328,8 @@ export default function App() {
 
   const getCategoryIcon = (id: string) => {
     switch (id) {
+      case 'vault':
+      case 'server1': return Gamepad2;
       case 'recommended': return Sparkles;
       case 'racing': return Car;
       case 'cloud': return Cloud;
@@ -391,7 +420,7 @@ export default function App() {
           onOpenRecommendModal={() => setIsRecommendModalOpen(true)}
           onOpenRatingModal={() => setIsRatingModalOpen(true)}
           onOpenVipModal={() => {
-            setTargetVipGame(games.find(g => g.isVipExclusive) || games[0]);
+            setTargetVipGame(null);
             setIsVipModalOpen(true);
           }}
           onOpenLegal={(tab) => {
@@ -403,6 +432,8 @@ export default function App() {
           onSearchChange={setSearchQuery}
           games={games}
           onSelectGame={handlePlayGame}
+          onOpenChromebookModal={() => setIsChromebookModalOpen(true)}
+          isChromebookTurbo={isChromebookTurbo}
         />
 
         <main className="flex-1">
@@ -439,6 +470,14 @@ export default function App() {
 
             <div className="flex items-center gap-2.5 shrink-0">
               <button
+                onClick={() => setIsChromebookModalOpen(true)}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 font-bold text-xs transition-colors cursor-pointer"
+                title="School Chromebook & Low-Spec Performance Hub (60 FPS Turbo & Tab Disguise)"
+              >
+                <Laptop className="w-3.5 h-3.5" />
+                <span>Chromebook Hub</span>
+              </button>
+              <button
                 onClick={() => setIsPabloHubOpen(true)}
                 className="px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition-colors shadow-sm shadow-cyan-500/20 cursor-pointer"
               >
@@ -468,15 +507,16 @@ export default function App() {
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               {[
                 { id: 'all' as CategoryFilter, label: 'All Catalog' },
+                { id: 'arcade' as CategoryFilter, label: '🕹️ Retro & Arcade' },
+                { id: 'sports' as CategoryFilter, label: '⚽ Sports Games' },
+                { id: 'racing' as CategoryFilter, label: '🏎️ Racing & Drifting' },
+                { id: 'action' as CategoryFilter, label: '💥 Action & Fighting' },
+                { id: 'puzzle' as CategoryFilter, label: '🧩 Puzzle & Strategy' },
+                { id: 'casual' as CategoryFilter, label: '😄 Casual & Meme' },
+                { id: 'cloud' as CategoryFilter, label: '☁️ Cloud Gaming' },
+                { id: 'vault' as CategoryFilter, label: '⚡ Haris Deluxe Vault' },
                 { id: 'recommended' as CategoryFilter, label: '⭐ Recommended (Top Picks)' },
-                { id: 'racing' as CategoryFilter, label: 'Racing & Driving' },
-                { id: 'cloud' as CategoryFilter, label: 'Cloud Gaming' },
-                { id: 'arcade' as CategoryFilter, label: 'Arcade Classics' },
-                { id: 'action' as CategoryFilter, label: 'Action & Sports' },
-                { id: 'casual' as CategoryFilter, label: 'Casual & Meme' },
-                { id: 'puzzle' as CategoryFilter, label: 'Puzzle & Strategy' },
-                { id: 'other' as CategoryFilter, label: 'Other Websites' },
-                { id: 'favorites' as CategoryFilter, label: `Favorites (${favorites.length})` }
+                { id: 'favorites' as CategoryFilter, label: `❤️ Favorites (${favorites.length})` }
               ].map((pill) => {
                 const isSelected = activeCategory === pill.id;
                 const Icon = getCategoryIcon(pill.id);
@@ -569,6 +609,7 @@ export default function App() {
                             setIsVipModalOpen(true);
                           }}
                           isUserVip={!!currentUser?.isVip}
+                          userVipTier={currentUser?.vipTier}
                           onShareHighScore={handleShareHighScore}
                         />
                       ))}
@@ -595,6 +636,65 @@ export default function App() {
                         <span>Submit Idea</span>
                       </span>
                     </div>
+                  </div>
+                </div>
+
+                {/* 2. Haris Retro & Arcade Vault Shelf */}
+                <div className="space-y-4 p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-cyan-500/10 via-[#06122c] to-blue-500/10 border-2 border-cyan-500/40 shadow-xl shadow-cyan-500/10">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyan-500/30 pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
+                        <Gamepad2 className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-xl font-black text-white font-display">
+                            Haris Retro &amp; Arcade Vault
+                          </h3>
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                            34 NATIVE CLASSICS
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-300">
+                          Official Haris Game Center unblocked collection with certified 60 FPS &amp; 0% lag
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setActiveCategory('vault')}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md shadow-cyan-500/20 self-start sm:self-auto"
+                    >
+                      <span>View All 34 Vault Games</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    {games
+                      .filter((g) => g.serverSource === 'Haris Arcade Vault' || g.id.startsWith('gl-'))
+                      .slice(0, 8)
+                      .map((game) => (
+                        <GameCard
+                          key={`vault-${game.id}`}
+                          game={game}
+                          onPlayModal={handlePlayGame}
+                          onPreviewAd={handleOpenAd}
+                          isFavorite={favorites.includes(game.id)}
+                          onToggleFavorite={toggleFavorite}
+                          onOpenRatingModal={() => {
+                            setRatingTargetGame(game);
+                            setIsRatingModalOpen(true);
+                          }}
+                          onOpenVipModal={(g) => {
+                            setTargetVipGame(g);
+                            setIsVipModalOpen(true);
+                          }}
+                          isUserVip={!!currentUser?.isVip}
+                          userVipTier={currentUser?.vipTier}
+                          onShareHighScore={handleShareHighScore}
+                        />
+                      ))}
                   </div>
                 </div>
 
@@ -658,6 +758,7 @@ export default function App() {
                               setIsVipModalOpen(true);
                             }}
                             isUserVip={!!currentUser?.isVip}
+                            userVipTier={currentUser?.vipTier}
                             onShareHighScore={handleShareHighScore}
                           />
                         ))}
@@ -703,6 +804,7 @@ export default function App() {
                       setIsVipModalOpen(true);
                     }}
                     isUserVip={!!currentUser?.isVip}
+                    userVipTier={currentUser?.vipTier}
                     onShareHighScore={handleShareHighScore}
                   />
                 ))}
@@ -770,6 +872,10 @@ export default function App() {
         onShareHighScore={handleShareHighScore}
         onOpenDiscord={() => setIsDiscordModalOpen(true)}
         currentUser={currentUser}
+        onOpenRatingModal={(g) => {
+          setRatingTargetGame(g);
+          setIsRatingModalOpen(true);
+        }}
       />
 
       {/* Pablo Arcade Hub Modal */}
@@ -778,16 +884,27 @@ export default function App() {
         onClose={() => setIsPabloHubOpen(false)}
         currentUser={currentUser}
         onUserUpdated={(u) => setCurrentUser(u)}
+        onOpenVipModal={() => {
+          setIsPabloHubOpen(false);
+          setIsVipModalOpen(true);
+        }}
       />
 
       {/* VIP Access Unlock Modal */}
       <VipLockModal
         isOpen={isVipModalOpen}
-        onClose={() => setIsVipModalOpen(false)}
+        onClose={() => {
+          setIsVipModalOpen(false);
+          setTargetVipGame(null);
+        }}
         game={targetVipGame}
         currentUser={currentUser}
         onUserUpdated={(u) => setCurrentUser(u)}
         onUnlockedPlay={(g) => handlePlayGame(g)}
+        onOpenPabloFeed={() => {
+          setIsVipModalOpen(false);
+          setIsPabloHubOpen(true);
+        }}
       />
 
       {/* Game Hype Pre-Roll Modal */}
@@ -857,7 +974,7 @@ export default function App() {
         onClose={() => setIsDiscordModalOpen(false)}
       />
 
-      {/* Sidebar Navigation & Control Drawer (Admin Panel & Terms Option) */}
+      {/* Sidebar Navigation & Control Drawer (Admin Panel, Terms Option & Game Filters) */}
       <SidebarMenu
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -873,6 +990,15 @@ export default function App() {
         snowEnabled={snowEnabled}
         onToggleSnow={() => setSnowEnabled(!snowEnabled)}
         onSignOut={handleSignOut}
+        activeCategory={activeCategory}
+        onSelectCategory={(cat) => {
+          setActiveCategory(cat);
+          const el = document.getElementById('games');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+        games={games}
+        favorites={favorites}
+        onOpenChromebookModal={() => setIsChromebookModalOpen(true)}
       />
 
       {/* Owner Admin Analytics & Graphs Panel (Haris Only) */}
@@ -886,6 +1012,14 @@ export default function App() {
           setLegalInitialTab('terms');
           setIsLegalModalOpen(true);
         }}
+      />
+
+      {/* School Chromebook 60 FPS Turbo & Unblock Hub Modal */}
+      <ChromebookModal
+        isOpen={isChromebookModalOpen}
+        onClose={() => setIsChromebookModalOpen(false)}
+        onTriggerStealth={() => setIsStealthActive(true)}
+        onToggleSnow={(en) => setSnowEnabled(en)}
       />
     </div>
   );

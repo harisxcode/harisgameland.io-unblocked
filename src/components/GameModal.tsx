@@ -20,7 +20,11 @@ import {
   Gamepad2,
   Copy,
   Terminal,
-  ArrowDown
+  ArrowDown,
+  Star,
+  Mail,
+  Flame,
+  Laptop
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Game, UserAccount, ChatComment } from '../types';
@@ -34,6 +38,37 @@ import {
 } from '../utils/highScores';
 import { getAllComments, postComment, toggleCommentLike } from '../utils/comments';
 import { playArcadeSfx } from '../utils/audio';
+import { PabloRetroIntro } from './PabloRetroIntro';
+
+export function isRetroGame(game?: Game | null): boolean {
+  if (!game) return false;
+  if (game.category === 'arcade') return true;
+  const str = `${game.title} ${game.genre} ${game.tagline} ${game.category}`.toLowerCase();
+  return (
+    str.includes('retro') ||
+    str.includes('arcade') ||
+    str.includes('classic') ||
+    str.includes('pixel') ||
+    str.includes('8-bit') ||
+    str.includes('16-bit') ||
+    str.includes('glacier') ||
+    str.includes('snake') ||
+    str.includes('tetris') ||
+    str.includes('pacman') ||
+    str.includes('pac-penguin') ||
+    str.includes('flappy') ||
+    str.includes('2048') ||
+    str.includes('hextris') ||
+    str.includes('block blast') ||
+    str.includes('cuphead') ||
+    str.includes('bowl') ||
+    str.includes('puck') ||
+    str.includes('stars') ||
+    str.includes('drift boss') ||
+    str.includes('dashmetry') ||
+    str.includes('geometry dash')
+  );
+}
 
 interface GameModalProps {
   game: Game | null;
@@ -45,6 +80,7 @@ interface GameModalProps {
   onOpenDiscord?: () => void;
   currentUser?: UserAccount | null;
   initialTab?: 'game' | 'highscore' | 'comments';
+  onOpenRatingModal?: (game: Game) => void;
 }
 
 export function GameModal({ 
@@ -54,7 +90,8 @@ export function GameModal({
   allGames, 
   onSelectGame,
   onOpenDiscord,
-  currentUser
+  currentUser,
+  onOpenRatingModal
 }: GameModalProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [iframeKey, setIframeKey] = useState(0);
@@ -66,16 +103,67 @@ export function GameModal({
   const [scoreSuccessMsg, setScoreSuccessMsg] = useState<string | null>(null);
   const [copiedBrag, setCopiedBrag] = useState(false);
 
+  // Pablo Arcade Retro Games Intro state
+  const [showRetroIntro, setShowRetroIntro] = useState(false);
+
   // In-modal comments state
   const [gameComments, setGameComments] = useState<ChatComment[]>([]);
   const [commentInput, setCommentInput] = useState('');
 
+  // Rating & Feedback State
+  const [inPageRating, setInPageRating] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(`haris_game_rating_${game?.id}`);
+      return saved ? parseInt(saved, 10) : (game?.rating ? Math.round(game.rating) : 5);
+    } catch {
+      return 5;
+    }
+  });
+  const [inPageHoverRating, setInPageHoverRating] = useState<number>(0);
+  const [selectedFeedbackTags, setSelectedFeedbackTags] = useState<string[]>([]);
+  const [feedbackReview, setFeedbackReview] = useState('');
+  const [ratingSubmittedMsg, setRatingSubmittedMsg] = useState<string | null>(null);
+
+  // Tell Website Owner in Person (Haris Gmail) State
+  const OWNER_EMAIL = 'harisxcode@gmail.com';
+  const [ownerMessageDraft, setOwnerMessageDraft] = useState('');
+  const [copiedOwnerEmail, setCopiedOwnerEmail] = useState(false);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomScoresRef = useRef<HTMLDivElement>(null);
+  const commentsDeskRef = useRef<HTMLDivElement>(null);
+  const feedbackDeskRef = useRef<HTMLDivElement>(null);
+  const ownerContactDeskRef = useRef<HTMLDivElement>(null);
 
   const username = currentUser?.username || 'GuestGrinder';
   const avatar = currentUser?.avatar || '🐧';
   const isVip = !!currentUser?.isVip;
+
+  // Initialize draft and stored ratings when game opens
+  useEffect(() => {
+    if (game) {
+      setOwnerMessageDraft(
+        `Hi Haris,\n\nI was playing ${game.title} on your arcade website and wanted to tell you:\n\n[Write what you want to tell Haris in person here]`
+      );
+      try {
+        const savedRating = localStorage.getItem(`haris_game_rating_${game.id}`);
+        if (savedRating) {
+          setInPageRating(parseInt(savedRating, 10));
+        } else {
+          setInPageRating(game.rating ? Math.round(game.rating) : 5);
+        }
+      } catch {}
+    }
+  }, [game?.id, game?.title]);
+
+  // Automatically trigger retro intro for retro games upon opening
+  useEffect(() => {
+    if (game && isRetroGame(game)) {
+      setShowRetroIntro(true);
+    } else {
+      setShowRetroIntro(false);
+    }
+  }, [game?.id]);
 
   // Award points on game play
   useEffect(() => {
@@ -102,11 +190,26 @@ export function GameModal({
     return () => window.removeEventListener('haris_comments_updated', loadComments);
   }, [game]);
 
-  // Keyboard shortcut for escape
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
+
+  // Keyboard shortcut for escape and 'F' for fullscreen
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
+
       if (e.key === 'Escape' && !document.fullscreenElement) {
         onClose();
+      } else if (!isInput && (e.key === 'f' || e.key === 'F')) {
+        e.preventDefault();
+        toggleFullscreen();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -129,21 +232,102 @@ export function GameModal({
   const leaderboard = getFullLeaderboard(game.id, username);
   const topRecord = leaderboard[0]?.formatted || 'N/A';
 
-  const toggleFullscreen = () => {
-    if (!containerRef.current) return;
-    if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().catch(() => {});
-    } else {
-      document.exitFullscreen().catch(() => {});
-    }
-  };
-
   const reloadGame = () => {
     setIframeKey((prev) => prev + 1);
   };
 
   const scrollToBottomScores = () => {
     bottomScoresRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const scrollToComments = () => {
+    commentsDeskRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const scrollToFeedback = () => {
+    feedbackDeskRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const scrollToOwnerContact = () => {
+    ownerContactDeskRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const ratingLabels: Record<number, string> = {
+    1: 'Needs Improvement',
+    2: 'Fair Experience',
+    3: 'Good & Fun',
+    4: 'Great Arcade Game!',
+    5: 'Legendary Masterpiece! 🔥'
+  };
+
+  const feedbackTagsList = [
+    '⚡ 0% Lag / Ultra Fast',
+    '🕹️ Smooth Controls',
+    '🎨 Crisp Retro Graphics',
+    '🏆 Great High Score Challenge',
+    '🐧 Pablo Recommended',
+    '🎵 Authentic Arcade Audio',
+    '📱 Responsive Sizing',
+    '⭐ Addictive Gameplay'
+  ];
+
+  const toggleFeedbackTag = (tag: string) => {
+    playArcadeSfx('click');
+    setSelectedFeedbackTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
+
+  const handleSubmitInPageRating = (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      localStorage.setItem(`haris_game_rating_${game.id}`, inPageRating.toString());
+      localStorage.setItem(
+        `haris_game_feedback_${game.id}`,
+        JSON.stringify({
+          rating: inPageRating,
+          tags: selectedFeedbackTags,
+          review: feedbackReview,
+          timestamp: new Date().toISOString()
+        })
+      );
+    } catch {}
+
+    setRatingSubmittedMsg(`Thank you! Your ${inPageRating}★ rating and feedback for ${game.title} were saved! +15 Pablo points rewarded!`);
+    playArcadeSfx('launch');
+    try {
+      confetti({ particleCount: 60, spread: 70, origin: { y: 0.8 } });
+    } catch {}
+    setTimeout(() => setRatingSubmittedMsg(null), 4000);
+  };
+
+  const getOwnerGmailUrl = (customBody?: string) => {
+    const bodyText = customBody || ownerMessageDraft;
+    const subject = `Arcade Feedback on ${game.title} - Haris Arcade`;
+    return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(OWNER_EMAIL)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+  };
+
+  const getOwnerMailtoUrl = (customBody?: string) => {
+    const bodyText = customBody || ownerMessageDraft;
+    const subject = `Arcade Feedback on ${game.title} - Haris Arcade`;
+    return `mailto:${OWNER_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+  };
+
+  const handleCopyOwnerEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(OWNER_EMAIL);
+      setCopiedOwnerEmail(true);
+      playArcadeSfx('click');
+      setTimeout(() => setCopiedOwnerEmail(false), 2500);
+    } catch {
+      setCopiedOwnerEmail(true);
+      setTimeout(() => setCopiedOwnerEmail(false), 2500);
+    }
+  };
+
+  const handleOpenOwnerGmail = () => {
+    playArcadeSfx('click');
+    window.open(getOwnerGmailUrl(), '_blank', 'noopener,noreferrer');
   };
 
   const handleScoreSubmit = (e?: React.FormEvent) => {
@@ -245,14 +429,58 @@ export function GameModal({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {/* Fullscreen toggle button with [F] shortcut */}
+            <button
+              onClick={toggleFullscreen}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold transition-all cursor-pointer ${
+                isFullscreen
+                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30'
+                  : 'bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 hover:border-cyan-400'
+              }`}
+              title={isFullscreen ? 'Exit Fullscreen (Press F or Esc)' : 'Enter Fullscreen (Press F)'}
+            >
+              {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">{isFullscreen ? 'Exit Fullscreen [F]' : 'Fullscreen [F]'}</span>
+            </button>
+
             {/* Quick jump to bottom scores button */}
             <button
               onClick={scrollToBottomScores}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-mono text-xs font-bold transition-colors cursor-pointer"
+              className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-mono text-xs font-bold transition-colors cursor-pointer"
               title="Jump to high scores and leaderboard at bottom of page"
             >
               <Trophy className="w-3.5 h-3.5 text-amber-400" />
-              <span>High Scores ↓</span>
+              <span>Scores ↓</span>
+            </button>
+
+            {/* Quick jump to rating & feedback */}
+            <button
+              onClick={scrollToFeedback}
+              className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-300 font-mono text-xs font-bold transition-colors cursor-pointer"
+              title="Rate this game and leave review feedback"
+            >
+              <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+              <span>Rate ↓</span>
+            </button>
+
+            {/* Direct personal email to website owner (Haris) */}
+            <button
+              onClick={scrollToOwnerContact}
+              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-mono text-xs font-bold transition-colors cursor-pointer"
+              title="Tell website owner (Haris) in person about this game via Gmail"
+            >
+              <Mail className="w-3.5 h-3.5 text-rose-400" />
+              <span>Email Owner</span>
+            </button>
+
+            {/* Pablo Arcade Retro Intro trigger button */}
+            <button
+              onClick={() => setShowRetroIntro(true)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/20 via-yellow-500/10 to-cyan-500/20 hover:from-amber-500/30 hover:to-cyan-500/30 border border-amber-500/40 text-amber-300 font-mono text-xs font-bold transition-all shadow-sm cursor-pointer hover:scale-105"
+              title="Watch Pablo Arcade 'It's in the game!' Retro Intro"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              <span className="hidden sm:inline">{isRetroGame(game) ? 'Replay Intro' : 'Retro Intro'}</span>
             </button>
 
             {/* Built-in engine fallback toggle */}
@@ -278,15 +506,6 @@ export function GameModal({
               title="Restart session"
             >
               <RotateCcw className="w-4 h-4" />
-            </button>
-
-            {/* Fullscreen toggle */}
-            <button
-              onClick={toggleFullscreen}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-              title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-            >
-              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
 
             {/* Direct launch link that safely navigates without 404 */}
@@ -315,8 +534,16 @@ export function GameModal({
         {/* Scrollable Game Page Content */}
         <div className="flex-1 overflow-y-auto bg-black flex flex-col">
           
-          {/* Main Game Stage / Canvas */}
-          <div className="w-full h-[520px] sm:h-[580px] lg:h-[620px] relative flex items-center justify-center bg-black shrink-0">
+          {/* Main Game Stage / Canvas - Dynamically scaled for 1366x768 Chromebook screens & full desktop */}
+          <div className="w-full h-[52vh] min-h-[340px] max-h-[600px] sm:h-[58vh] lg:h-[62vh] relative flex items-center justify-center bg-black shrink-0 overflow-hidden">
+            {/* Pablo Arcade Retro Games Intro Overlay */}
+            <PabloRetroIntro
+              isOpen={showRetroIntro}
+              onComplete={() => setShowRetroIntro(false)}
+              gameTitle={game.title}
+              gameGenre={game.genre}
+            />
+
             {isUsingBuiltIn && game.builtInHtml ? (
               <iframe
                 key={`builtin-${iframeKey}`}
@@ -337,25 +564,78 @@ export function GameModal({
             )}
           </div>
 
-          {/* Quick Indicator Bar below canvas */}
-          <div className="px-4 py-2 bg-[#060c1d] border-t border-b border-slate-800 flex items-center justify-between text-xs text-slate-400 shrink-0">
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1 text-emerald-400 font-mono text-[11px]">
-                <ShieldCheck className="w-3.5 h-3.5" /> 100% Unblocked &amp; 0% Lag
+          {/* Quick Action & Controls Bar below canvas */}
+          <div className="px-4 py-2.5 bg-[#060c1d] border-t border-b border-slate-800 flex flex-wrap items-center justify-between gap-2.5 text-xs text-slate-400 shrink-0">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Fullscreen Button */}
+              <button
+                onClick={toggleFullscreen}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs font-bold transition-all cursor-pointer ${
+                  isFullscreen 
+                    ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/25' 
+                    : 'bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 hover:border-cyan-300'
+                }`}
+                title="Toggle Fullscreen Mode (Press F or Esc)"
+              >
+                {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                <span>{isFullscreen ? 'Windowed [F]' : 'Full Screen [F]'}</span>
+              </button>
+
+              <span className="hidden sm:inline-flex items-center gap-1 text-emerald-400 font-mono text-[11px] bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded">
+                <ShieldCheck className="w-3.5 h-3.5" /> 100% Unblocked · 0% Lag
               </span>
-              <span className="hidden sm:inline text-slate-600">·</span>
-              <span className="hidden sm:inline text-[11px] font-mono text-slate-400">
+
+              <span className="hidden lg:inline-flex items-center gap-1 text-cyan-300 font-mono text-[11px] bg-cyan-500/10 border border-cyan-500/20 px-2 py-1 rounded font-bold">
+                <Laptop className="w-3.5 h-3.5 text-cyan-400" /> Chromebook Turbo (60 FPS)
+              </span>
+
+              <span className="hidden md:inline text-[11px] font-mono text-slate-400 bg-slate-900 px-2 py-1 rounded border border-slate-800">
                 Unit: <strong className="text-amber-300 font-mono">{currentUnit}</strong>
               </span>
             </div>
 
-            <button
-              onClick={scrollToBottomScores}
-              className="flex items-center gap-1 text-amber-300 hover:text-amber-200 font-mono text-xs font-bold transition-colors cursor-pointer"
-            >
-              <span>Scroll to High Scores &amp; Submit Run</span>
-              <ArrowDown className="w-3.5 h-3.5 animate-bounce" />
-            </button>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {/* 1. High scores */}
+              <button
+                onClick={scrollToBottomScores}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-mono text-xs font-bold transition-colors cursor-pointer"
+                title="View records and submit your high score"
+              >
+                <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                <span>High Scores</span>
+              </button>
+
+              {/* 2. Comments */}
+              <button
+                onClick={scrollToComments}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 font-mono text-xs font-bold transition-colors cursor-pointer"
+                title="Read and post comments for this game"
+              >
+                <MessageSquare className="w-3.5 h-3.5 text-purple-400" />
+                <span>Comments</span>
+              </button>
+
+              {/* 3. Rate & Feedback */}
+              <button
+                onClick={scrollToFeedback}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-300 font-mono text-xs font-bold transition-colors cursor-pointer"
+                title="Give 5-star rating & feedback"
+              >
+                <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                <span>Rate Game</span>
+              </button>
+
+              {/* 4. Contact Owner (Haris) */}
+              <button
+                onClick={scrollToOwnerContact}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-mono text-xs font-bold transition-colors cursor-pointer"
+                title="Tell website owner (Haris) in person about this game via Gmail"
+              >
+                <Mail className="w-3.5 h-3.5 text-rose-400" />
+                <span>Tell Owner in Person</span>
+                <ArrowDown className="w-3 h-3 animate-bounce" />
+              </button>
+            </div>
           </div>
 
           {/* ========================================================
@@ -566,17 +846,21 @@ export function GameModal({
             </div>
 
             {/* Game Comments & Discussion Section at the bottom */}
-            <div className="p-6 rounded-3xl bg-[#08122a] border border-slate-800 space-y-4">
+            <div ref={commentsDeskRef} className="p-6 rounded-3xl bg-[#08122a] border border-slate-800 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <MessageSquare className="w-5 h-5 text-purple-400" />
+                  <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400">
+                    <MessageSquare className="w-5 h-5 text-purple-400" />
+                  </div>
                   <div>
+                    <div className="text-[10px] font-mono uppercase tracking-wider text-purple-400 font-bold flex items-center gap-1.5">
+                      <span>Discussion Stream</span>
+                      <span>·</span>
+                      <span>Station 2</span>
+                    </div>
                     <h4 className="text-base font-bold text-white font-display">
-                      {game.title} Player Comments
+                      {game.title} Player Comments &amp; Brags
                     </h4>
-                    <p className="text-xs text-slate-400">
-                      Discuss tips, routes, and high-score strategies with other grinders
-                    </p>
                   </div>
                 </div>
 
@@ -654,6 +938,245 @@ export function GameModal({
                     </div>
                   ))
                 )}
+              </div>
+            </div>
+
+            {/* ========================================================
+                STATION 3: GAME FEEDBACK & 5-STAR RATING STATION
+               ======================================================== */}
+            <div 
+              ref={feedbackDeskRef} 
+              className="p-6 rounded-3xl bg-gradient-to-br from-[#0c1836] via-[#091535] to-[#050c20] border-2 border-yellow-500/40 shadow-xl space-y-5"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-yellow-500/20 border-2 border-yellow-400 flex items-center justify-center text-yellow-400 shadow-lg shadow-yellow-500/20">
+                    <Star className="w-6 h-6 fill-yellow-400" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-mono uppercase tracking-wider text-yellow-400 font-bold flex items-center gap-1.5">
+                      <span>Game Rating &amp; Review Station</span>
+                      <span>·</span>
+                      <span>Station 3</span>
+                    </div>
+                    <h4 className="text-xl sm:text-2xl font-black text-white font-display">
+                      Rate {game.title} &amp; Give Feedback
+                    </h4>
+                  </div>
+                </div>
+                
+                <div className="text-xs font-mono text-slate-300 bg-slate-900/90 px-3.5 py-2 rounded-xl border border-slate-800 flex items-center gap-2 self-start sm:self-auto">
+                  <span className="text-slate-400">Current Arcade Rating:</span>
+                  <strong className="text-yellow-400 font-bold flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                    {game.rating.toFixed(1)} / 5.0
+                  </strong>
+                </div>
+              </div>
+
+              {ratingSubmittedMsg && (
+                <div className="p-3.5 rounded-xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 font-mono text-xs flex items-center gap-2 animate-fadeIn">
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>{ratingSubmittedMsg}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmitInPageRating} className="space-y-4">
+                {/* 5-Star interactive selector */}
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 font-bold mb-2">
+                    Your Star Rating for {game.title}:
+                  </label>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-1.5 bg-slate-950 p-2 rounded-2xl border border-slate-800">
+                      {[1, 2, 3, 4, 5].map((starVal) => {
+                        const isFilled = (inPageHoverRating || inPageRating) >= starVal;
+                        return (
+                          <button
+                            key={starVal}
+                            type="button"
+                            onMouseEnter={() => setInPageHoverRating(starVal)}
+                            onMouseLeave={() => setInPageHoverRating(0)}
+                            onClick={() => {
+                              setInPageRating(starVal);
+                              playArcadeSfx('click');
+                            }}
+                            className="p-1 text-slate-600 hover:text-yellow-400 transition-all transform hover:scale-115 cursor-pointer"
+                            title={`Rate ${starVal} Star${starVal > 1 ? 's' : ''}`}
+                          >
+                            <Star
+                              className={`w-7 h-7 ${
+                                isFilled
+                                  ? 'fill-yellow-400 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.55)]'
+                                  : 'text-slate-700'
+                              }`}
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <span className="text-sm font-mono font-bold text-yellow-300">
+                      {ratingLabels[inPageHoverRating || inPageRating] || `${inPageRating} Stars`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Quick Feedback Tags */}
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 font-bold mb-2">
+                    Quick Review Tags (Click to select):
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {feedbackTagsList.map((tag) => {
+                      const isSelected = selectedFeedbackTags.includes(tag);
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => toggleFeedbackTag(tag)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-yellow-500/25 border-yellow-400 text-yellow-300 shadow-sm shadow-yellow-500/20'
+                              : 'bg-slate-900/90 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                          } border`}
+                        >
+                          {tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Feedback review textarea */}
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 font-bold mb-2">
+                    Detailed Feedback / Comments for {game.title}:
+                  </label>
+                  <textarea
+                    value={feedbackReview}
+                    onChange={(e) => setFeedbackReview(e.target.value)}
+                    rows={3}
+                    placeholder={`What did you like about ${game.title}? How was the difficulty, music, or frame rate? Leave your thoughts...`}
+                    className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+                  <span className="text-xs font-mono text-emerald-400 flex items-center gap-1.5">
+                    <Coins className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Rating gives +15 Pablo Points to your account!</span>
+                  </span>
+
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Star className="w-4 h-4 fill-slate-950" />
+                    <span>Submit Game Rating &amp; Feedback</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* ========================================================
+                STATION 4: TELL WEBSITE OWNER (HARIS) IN PERSON (GMAIL)
+               ======================================================== */}
+            <div 
+              ref={ownerContactDeskRef}
+              className="p-6 rounded-3xl bg-gradient-to-br from-[#1a0a1a] via-[#120822] to-[#080414] border-2 border-rose-500/40 shadow-xl space-y-5"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border-2 border-rose-400 flex items-center justify-center text-rose-400 shadow-lg shadow-rose-500/20">
+                    <Mail className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-mono uppercase tracking-wider text-rose-400 font-bold flex items-center gap-1.5">
+                      <span>Website Owner Direct Line</span>
+                      <span>·</span>
+                      <span>Station 4</span>
+                    </div>
+                    <h4 className="text-xl sm:text-2xl font-black text-white font-display">
+                      Tell the Owner About {game.title}
+                    </h4>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <span className="text-xs font-mono text-rose-300 bg-rose-500/10 border border-rose-500/30 px-3 py-1.5 rounded-xl">
+                    Owner: <strong>Haris</strong> ({OWNER_EMAIL})
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-3.5 rounded-2xl bg-rose-950/30 border border-rose-500/20 text-xs sm:text-sm text-slate-200 leading-relaxed">
+                  <p className="font-semibold text-rose-300 mb-1">
+                    This is the owner of this website.
+                  </p>
+                  <p className="text-slate-300">
+                    If you want to send a personal email to him, or tell the owner of the website (this Account) anything in person about <strong>{game.title}</strong>, click below. It will send you directly to Gmail with this owner's contact pre-filled so you can write and send your message to him immediately!
+                  </p>
+                </div>
+
+                {/* Message Draft box */}
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 font-bold mb-1.5">
+                    Your Personal Message to Haris:
+                  </label>
+                  <textarea
+                    value={ownerMessageDraft}
+                    onChange={(e) => setOwnerMessageDraft(e.target.value)}
+                    rows={4}
+                    className="w-full px-4 py-3 bg-slate-950 border border-rose-500/30 focus:border-rose-400 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none font-mono"
+                    placeholder={`Write your personal note to Haris regarding ${game.title}...`}
+                  />
+                </div>
+
+                {/* Actions: Gmail Button, Mailto Button, Copy Email */}
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                  {/* 1. Direct Gmail button */}
+                  <a
+                    href={getOwnerGmailUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => playArcadeSfx('click')}
+                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-rose-900/30 transition-all cursor-pointer hover:scale-[1.02]"
+                    title="Send personal email to website owner (Haris) via Gmail"
+                  >
+                    <Mail className="w-4 h-4" />
+                    <span>Open in Gmail &amp; Send to Owner</span>
+                  </a>
+
+                  {/* 2. Mailto fallback */}
+                  <a
+                    href={getOwnerMailtoUrl()}
+                    className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 font-mono text-xs font-semibold transition-colors"
+                    title="Open in your default mail app"
+                  >
+                    <span>Default Mail (mailto)</span>
+                  </a>
+
+                  {/* 3. Copy Email button */}
+                  <button
+                    type="button"
+                    onClick={handleCopyOwnerEmail}
+                    className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 font-mono text-xs font-semibold transition-colors cursor-pointer"
+                    title="Copy owner's Gmail address"
+                  >
+                    {copiedOwnerEmail ? (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-400" />
+                        <span className="text-emerald-300">Copied {OWNER_EMAIL}!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 text-slate-400" />
+                        <span>Copy Email: {OWNER_EMAIL}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 

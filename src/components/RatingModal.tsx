@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Star, X, Check, Heart, Sparkles, MessageSquare } from 'lucide-react';
+import { Star, X, Check, Heart, Sparkles, MessageSquare, Mail } from 'lucide-react';
 import { playArcadeSfx } from '../utils/audio';
 
 import { Game } from '../types';
@@ -194,6 +194,24 @@ export function RatingModal({ isOpen, onClose, game, onSaveRating }: RatingModal
                   placeholder="Tell us what you liked or how we can make the game center even better..."
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                 />
+              </div>
+
+              {/* Tell Owner in Person via Gmail */}
+              <div className="p-2.5 rounded-xl bg-rose-950/30 border border-rose-500/30 flex items-center justify-between gap-2">
+                <div className="text-[11px] text-slate-300">
+                  <span className="text-rose-300 font-bold block">Tell Website Owner in Person:</span>
+                  <span className="text-slate-400">Want to email Haris directly about {game ? game.title : 'this game'}?</span>
+                </div>
+                <a
+                  href={`https://mail.google.com/mail/?view=cm&fs=1&to=harisxcode@gmail.com&su=${encodeURIComponent(`Feedback on ${game ? game.title : 'Haris Arcade'} - Direct to Owner`)}&body=${encodeURIComponent(`Hi Haris,\n\nI was reviewing ${game ? game.title : 'your arcade'} and wanted to tell you in person:\n\n`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs uppercase tracking-wider shrink-0 shadow-sm transition-colors"
+                  title="Open Gmail to email website owner (Haris)"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Gmail Owner</span>
+                </a>
               </div>
 
               {/* Footer Buttons */}

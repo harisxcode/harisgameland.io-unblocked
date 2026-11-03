@@ -49,3 +49,33 @@
 .radial-glow {
   background: radial-gradient(circle at 50% 0%, rgba(14, 165, 233, 0.15) 0%, rgba(4, 8, 20, 0) 70%);
 }
+
+/* ========================================================
+   SCHOOL CHROMEBOOK & LOW-SPEC HARDWARE TURBO (60 FPS)
+   ======================================================== */
+.chromebook-mode * {
+  /* Prevent GPU pipeline stalls on Intel UHD 600/605 / Mali GPUs */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Fallback crisp high-contrast dark panels instead of expensive Gaussian blurs */
+.chromebook-mode .backdrop-blur-md,
+.chromebook-mode .backdrop-blur-sm,
+.chromebook-mode .backdrop-blur-lg,
+.chromebook-mode .bg-black\/85,
+.chromebook-mode .bg-black\/80 {
+  background-color: #050a1c !important;
+}
+
+/* Hardware accelerated layer */
+.gpu-turbo {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Reduce layout thrashing on 2GB/4GB RAM school Chromebooks */
+.shelf-contain {
+  contain: layout style paint;
+}
+

@@ -18,11 +18,12 @@ import {
   BrainCircuit,
   Layers,
   Headphones,
-  Trophy
+  Trophy,
+  Server
 } from 'lucide-react';
 import { Game } from '../data/games';
 
-export type CategoryFilter = 'all' | 'recommended' | 'racing' | 'cloud' | 'arcade' | 'action' | 'casual' | 'puzzle' | 'sports' | 'other' | 'favorites' | 'upcoming';
+export type CategoryFilter = 'all' | 'vault' | 'recommended' | 'racing' | 'cloud' | 'arcade' | 'action' | 'casual' | 'puzzle' | 'sports' | 'other' | 'favorites' | 'upcoming';
 export type SortOption = 'featured' | 'az' | 'newest';
 export type ViewMode = 'shelves' | 'grid' | 'compact';
 
@@ -87,6 +88,7 @@ export function GameFilterControls({
 
   const categories: { id: CategoryFilter; label: string; icon: typeof Gamepad2; count: number }[] = [
     { id: 'all', label: 'All Categories', icon: SlidersHorizontal, count: games.length },
+    { id: 'vault', label: '🕹️ Retro & Arcade Vault (34 Games)', icon: Gamepad2, count: games.filter(g => g.serverSource === 'Haris Arcade Vault' || g.id.startsWith('gl-')).length },
     { id: 'recommended', label: '⭐ Recommended (Top Picks)', icon: Sparkles, count: games.filter(g => g.isFeatured || g.isPopular || g.rating >= 4.8).length },
     { id: 'racing', label: 'Racing & Driving', icon: Car, count: games.filter(g => g.category === 'racing').length },
     { id: 'cloud', label: 'Cloud & Streaming', icon: Cloud, count: games.filter(g => g.category === 'cloud').length },

@@ -29,6 +29,7 @@ import {
   getTunnelRushBuiltInHtml,
   getPaperIoBuiltInHtml
 } from './builtInGames';
+import { GAMELAND_SERVER_GAMES } from './gamelandGames';
 
 export {
   nitroThumb,
@@ -123,7 +124,7 @@ export const UNIVERSAL_CATEGORIES: CategoryMeta[] = [
   }
 ];
 
-export const INITIAL_GAMES: Game[] = [
+const BASE_GAMES: Game[] = [
   {
     id: 'escape-road',
     title: 'Escape Road Unblocked',
@@ -153,7 +154,8 @@ export const INITIAL_GAMES: Game[] = [
     isPopular: true,
     isNew: true,
     isVipExclusive: true,
-    vipRequirement: { points: 500, priceUsd: 5.0 },
+    vipTierRequired: 'gold',
+    vipRequirement: { points: 750, priceUsd: 7.99 },
     rating: 4.9,
     ratingCount: 3120,
     playCount: 348200,
@@ -204,7 +206,8 @@ export const INITIAL_GAMES: Game[] = [
     isFeatured: true,
     isPopular: true,
     isVipExclusive: true,
-    vipRequirement: { points: 500, priceUsd: 5.0 },
+    vipTierRequired: 'regular',
+    vipRequirement: { points: 500, priceUsd: 4.99 },
     rating: 4.9,
     ratingCount: 1940,
     playCount: 264100,
@@ -252,7 +255,8 @@ export const INITIAL_GAMES: Game[] = [
     isFeatured: true,
     isPopular: true,
     isVipExclusive: true,
-    vipRequirement: { points: 500, priceUsd: 5.0 },
+    vipTierRequired: 'diamond',
+    vipRequirement: { points: 1000, priceUsd: 11.99 },
     rating: 4.8,
     ratingCount: 4280,
     playCount: 582400,
@@ -472,7 +476,8 @@ export const INITIAL_GAMES: Game[] = [
     isFeatured: true,
     isPopular: true,
     isVipExclusive: true,
-    vipRequirement: { points: 500, priceUsd: 5.0 },
+    vipTierRequired: 'regular',
+    vipRequirement: { points: 500, priceUsd: 4.99 },
     rating: 4.9,
     ratingCount: 3840,
     playCount: 491200,
@@ -521,7 +526,8 @@ export const INITIAL_GAMES: Game[] = [
     isFeatured: true,
     isPopular: true,
     isVipExclusive: true,
-    vipRequirement: { points: 500, priceUsd: 5.0 },
+    vipTierRequired: 'diamond',
+    vipRequirement: { points: 1000, priceUsd: 11.99 },
     rating: 4.9,
     ratingCount: 4120,
     playCount: 520400,
@@ -569,7 +575,8 @@ export const INITIAL_GAMES: Game[] = [
     isFeatured: true,
     isPopular: true,
     isVipExclusive: true,
-    vipRequirement: { points: 500, priceUsd: 5.0 },
+    vipTierRequired: 'gold',
+    vipRequirement: { points: 750, priceUsd: 7.99 },
     rating: 4.9,
     ratingCount: 2980,
     playCount: 387900,
@@ -616,7 +623,8 @@ export const INITIAL_GAMES: Game[] = [
     isFeatured: true,
     isPopular: true,
     isVipExclusive: true,
-    vipRequirement: { points: 500, priceUsd: 5.0 },
+    vipTierRequired: 'gold',
+    vipRequirement: { points: 750, priceUsd: 7.99 },
     rating: 4.9,
     ratingCount: 5840,
     playCount: 642000,
@@ -709,7 +717,8 @@ export const INITIAL_GAMES: Game[] = [
     isFeatured: true,
     isPopular: true,
     isVipExclusive: true,
-    vipRequirement: { points: 500, priceUsd: 5.0 },
+    vipTierRequired: 'diamond',
+    vipRequirement: { points: 1000, priceUsd: 11.99 },
     rating: 4.9,
     ratingCount: 4650,
     playCount: 532100,
@@ -755,7 +764,9 @@ export const INITIAL_GAMES: Game[] = [
     techStack: ['HTML5 Canvas 2D', 'Grid Spatial Partitioning', 'AI Pathfinding'],
     isFeatured: true,
     isPopular: true,
-    isVipExclusive: false,
+    isVipExclusive: true,
+    vipTierRequired: 'regular',
+    vipRequirement: { points: 500, priceUsd: 4.99 },
     rating: 4.8,
     ratingCount: 3890,
     playCount: 412700,
@@ -775,5 +786,12 @@ export const INITIAL_GAMES: Game[] = [
       excitementLevel: 'TERRITORY CONQUEST THRILL'
     }
   }
+];
+
+export { GAMELAND_SERVER_GAMES };
+
+export const INITIAL_GAMES: Game[] = [
+  ...BASE_GAMES,
+  ...GAMELAND_SERVER_GAMES
 ];
 

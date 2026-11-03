@@ -23,12 +23,22 @@ import {
   School,
   ArrowRight,
   PanelLeftClose,
-  AtSign
+  AtSign,
+  Trophy,
+  Car,
+  Flame,
+  BrainCircuit,
+  Laugh,
+  Cloud,
+  Heart,
+  SlidersHorizontal,
+  Laptop
 } from 'lucide-react';
-import { UserAccount } from '../types';
+import { UserAccount, Game } from '../types';
 import { isOwnerAccount } from '../utils/auth';
 import { playArcadeSfx } from '../utils/audio';
 import { LegalTab } from './LegalModal';
+import { CategoryFilter } from './GameFilterControls';
 import pabloMascotImg from '../assets/images/retro_pablo_mascot_1793055166374.jpg';
 
 interface SidebarMenuProps {
@@ -43,6 +53,11 @@ interface SidebarMenuProps {
   snowEnabled: boolean;
   onToggleSnow: () => void;
   onSignOut: () => void;
+  activeCategory?: CategoryFilter;
+  onSelectCategory?: (cat: CategoryFilter) => void;
+  games?: Game[];
+  favorites?: string[];
+  onOpenChromebookModal?: () => void;
 }
 
 export function SidebarMenu({
@@ -56,7 +71,12 @@ export function SidebarMenu({
   onTriggerStealth,
   snowEnabled,
   onToggleSnow,
-  onSignOut
+  onSignOut,
+  activeCategory = 'all',
+  onSelectCategory,
+  games = [],
+  favorites = [],
+  onOpenChromebookModal
 }: SidebarMenuProps) {
   const isOwner = isOwnerAccount(currentUser);
   const [copiedEmail, setCopiedEmail] = useState(false);
@@ -191,18 +211,183 @@ export function SidebarMenu({
               {isOwner ? (
                 <div className="mt-2 pt-2 border-t border-amber-500/30 flex items-center justify-between text-[10px] font-mono text-amber-300">
                   <span className="flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-amber-400" /> Admin Privileges Active
+                    <ShieldCheck className="w-3 h-3 text-amber-400" /> Diamond Overlord · Admin
                   </span>
-                  <span className="text-[9px] text-amber-200/80">Haris Only</span>
+                  <span className="text-[9px] text-amber-200/80">Owner</span>
                 </div>
               ) : (
                 <div className="mt-2 pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] font-mono text-cyan-300">
-                  <span>{currentUser.isVip ? 'VIP Member 👑' : 'Standard Gamer'}</span>
-                  <span>{currentUser.gamesPlayedCount} plays</span>
+                  <span className="truncate max-w-[140px]">{currentUser.activeTitle || (currentUser.isVip ? 'VIP Member' : 'Standard Gamer')}</span>
+                  <span className="uppercase text-amber-300 font-bold shrink-0">{currentUser.vipTier ? `${currentUser.vipTier} VIP` : `${currentUser.gamesPlayedCount} plays`}</span>
                 </div>
               )}
             </div>
           )}
+
+          {/* ========================================================
+              GAME CATEGORIES & FILTERS (SIDEBAR FILTER OPTIONS)
+             ======================================================== */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs font-mono uppercase tracking-wider text-cyan-400 font-bold px-1">
+              <span className="flex items-center gap-1.5">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Game Filters</span>
+              </span>
+              {activeCategory && activeCategory !== 'all' && (
+                <button
+                  onClick={() => {
+                    playArcadeSfx('click');
+                    onSelectCategory?.('all');
+                  }}
+                  className="text-[10px] text-cyan-300 hover:text-white underline cursor-pointer"
+                >
+                  Reset Filter
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-1 bg-[#060e22] p-2 rounded-2xl border border-cyan-500/20 shadow-inner">
+              {[
+                {
+                  id: 'all' as CategoryFilter,
+                  label: 'All Games',
+                  sublabel: 'Full unblocked catalog',
+                  icon: Gamepad2,
+                  color: 'text-cyan-400',
+                  count: games.length
+                },
+                {
+                  id: 'arcade' as CategoryFilter,
+                  label: 'Retro Games',
+                  sublabel: 'Classic 8-bit & coin-op arcade',
+                  icon: Gamepad2,
+                  color: 'text-amber-400',
+                  count: games.filter(g => g.category === 'arcade' || g.genre.toLowerCase().includes('retro') || g.title.toLowerCase().includes('retro')).length
+                },
+                {
+                  id: 'sports' as CategoryFilter,
+                  label: 'Sports Games',
+                  sublabel: 'Retro Bowl, soccer & basketball',
+                  icon: Trophy,
+                  color: 'text-emerald-400',
+                  count: games.filter(g => g.category === 'sports').length
+                },
+                {
+                  id: 'racing' as CategoryFilter,
+                  label: 'Racing & Driving',
+                  sublabel: 'Polytrack, drifts & getaway runs',
+                  icon: Car,
+                  color: 'text-orange-400',
+                  count: games.filter(g => g.category === 'racing').length
+                },
+                {
+                  id: 'action' as CategoryFilter,
+                  label: 'Action Games',
+                  sublabel: 'Brawl Stars, Cuphead & combat',
+                  icon: Flame,
+                  color: 'text-rose-400',
+                  count: games.filter(g => g.category === 'action').length
+                },
+                {
+                  id: 'puzzle' as CategoryFilter,
+                  label: 'Puzzle & Strategy',
+                  sublabel: 'Block Blast, 2048 & Tetris',
+                  icon: BrainCircuit,
+                  color: 'text-purple-400',
+                  count: games.filter(g => g.category === 'puzzle').length
+                },
+                {
+                  id: 'casual' as CategoryFilter,
+                  label: 'Casual & Viral',
+                  sublabel: 'Cookie clickers & meme party',
+                  icon: Laugh,
+                  color: 'text-yellow-400',
+                  count: games.filter(g => g.category === 'casual' || (g.category as string) === 'meme').length
+                },
+                {
+                  id: 'cloud' as CategoryFilter,
+                  label: 'Cloud Streaming',
+                  sublabel: 'Instant 3D browser games (no install)',
+                  icon: Cloud,
+                  color: 'text-sky-400',
+                  count: games.filter(g => g.category === 'cloud').length
+                },
+                {
+                  id: 'vault' as CategoryFilter,
+                  label: 'Haris Deluxe Vault',
+                  sublabel: '34 original native classics',
+                  icon: Gamepad2,
+                  color: 'text-cyan-300',
+                  count: games.filter(g => g.serverSource === 'Haris Arcade Vault' || g.id.startsWith('gl-')).length
+                },
+                {
+                  id: 'recommended' as CategoryFilter,
+                  label: 'Pablo\'s Top Picks',
+                  sublabel: '5-Star certified unblocked',
+                  icon: Sparkles,
+                  color: 'text-amber-300',
+                  count: games.filter(g => g.isFeatured || g.isPopular || g.rating >= 4.8).length
+                },
+                {
+                  id: 'favorites' as CategoryFilter,
+                  label: 'My Favorites',
+                  sublabel: 'Saved & bookmarked games',
+                  icon: Heart,
+                  color: 'text-rose-400',
+                  count: favorites.length
+                }
+              ].map((cat) => {
+                const isActive = activeCategory === cat.id;
+                const Icon = cat.icon;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => {
+                      playArcadeSfx('click');
+                      onSelectCategory?.(cat.id);
+                      if (window.innerWidth < 768) {
+                        onClose();
+                      }
+                    }}
+                    className={`w-full p-2 rounded-xl text-left transition-all flex items-center justify-between cursor-pointer group ${
+                      isActive
+                        ? 'bg-gradient-to-r from-cyan-500/25 to-blue-500/20 border border-cyan-400 text-white shadow-md shadow-cyan-500/20'
+                        : 'hover:bg-slate-900/90 text-slate-300 hover:text-white border border-transparent hover:border-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                        isActive ? 'bg-cyan-500 text-slate-950 font-bold' : 'bg-slate-900 border border-slate-800'
+                      }`}>
+                        <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-slate-950' : cat.color}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`text-xs font-bold truncate ${isActive ? 'text-cyan-300' : 'text-slate-200 group-hover:text-white'}`}>
+                          {cat.label}
+                        </div>
+                        <div className="text-[9px] text-slate-400 font-mono truncate">
+                          {cat.sublabel}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                        isActive
+                          ? 'bg-cyan-400 text-slate-950 font-bold'
+                          : 'bg-slate-900 text-slate-400 group-hover:text-slate-200 border border-slate-800'
+                      }`}>
+                        {cat.count}
+                      </span>
+                      {isActive && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           {/* ========================================================
               CONTACT US SECTION (DIRECT GMAIL TO OWNER HARIS)
@@ -446,6 +631,23 @@ export function SidebarMenu({
 
           {/* Quick Actions & Utilities */}
           <div className="space-y-2 pt-2 border-t border-slate-800/80">
+            {/* School Chromebook & Low-Spec Mode Launcher */}
+            <button
+              onClick={() => {
+                playArcadeSfx('click');
+                onOpenChromebookModal?.();
+              }}
+              className="w-full flex items-center justify-between p-2.5 rounded-xl bg-cyan-950/70 hover:bg-cyan-900/60 border border-cyan-500/40 text-cyan-300 text-xs font-bold transition-all cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <Laptop className="w-4 h-4 text-cyan-400" />
+                <span>Chromebook Hub</span>
+              </div>
+              <span className="font-mono text-[10px] text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 px-1.5 py-0.5 rounded font-bold">
+                60 FPS Turbo
+              </span>
+            </button>
+
             <div className="flex items-center justify-between gap-2">
               <button
                 onClick={() => {

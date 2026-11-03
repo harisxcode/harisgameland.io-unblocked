@@ -24,6 +24,27 @@ export interface GameHypeAd {
   excitementLevel: string;
 }
 
+export type VipTierLevel = 'none' | 'regular' | 'gold' | 'diamond';
+
+export interface VipTierDefinition {
+  id: 'regular' | 'gold' | 'diamond';
+  name: string;
+  tagline: string;
+  tokenCost: number; // 500, 750, 1000
+  usdCost: number; // 4.99, 7.99, 11.99
+  badge: string;
+  icon: string;
+  accentClass: string;
+  borderClass: string;
+  bgGradient: string;
+  textClass: string;
+  unlockedGameNames: string[];
+  unlockedTitles: string[];
+  unlockedAvatars: string[];
+  unlockedSnackNames: string[];
+  perks: string[];
+}
+
 export interface Game {
   id: string;
   title: string;
@@ -44,9 +65,10 @@ export interface Game {
   isPopular?: boolean;
   isNew?: boolean;
   isVipExclusive?: boolean;
+  vipTierRequired?: 'regular' | 'gold' | 'diamond';
   vipRequirement?: {
-    points: number; // 500
-    priceUsd: number; // 5.00
+    points: number; // 500, 750, 1000
+    priceUsd: number; // 4.99, 7.99, 11.99
   };
   rating: number; // 4.8
   ratingCount: number; // 1240
@@ -57,6 +79,7 @@ export interface Game {
   builtInHtml?: string;
   hypeAd?: GameHypeAd;
   highScoreUnit?: string; // 'm', 'pts', 'cookies', 'wins', '%', etc.
+  serverSource?: string;
 }
 
 export interface UserAccount {
@@ -67,7 +90,10 @@ export interface UserAccount {
   avatar: string;
   penguinPoints: number;
   isVip: boolean;
-  vipTier?: 'Gold' | 'Platinum' | 'Diamond';
+  vipTier?: VipTierLevel;
+  activeTitle?: string;
+  unlockedTitles?: string[];
+  unlockedAvatars?: string[];
   vipActivatedAt?: string;
   createdAt: string;
   lastLogin: string;
@@ -90,6 +116,7 @@ export interface PenguinSnack {
   affectionBoost: number;
   description: string;
   tasteReaction: string;
+  vipTierRequired?: 'regular' | 'gold' | 'diamond';
 }
 
 export interface PabloTip {
