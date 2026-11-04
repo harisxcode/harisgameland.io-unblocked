@@ -35,10 +35,14 @@ import { PabloArcadeHubModal } from './components/PabloArcadeHubModal';
 import { VipLockModal } from './components/VipLockModal';
 import { DisguiseOverlay } from './components/DisguiseOverlay';
 import { SnowfallEffect } from './components/SnowfallEffect';
+import { SeasonPassModal } from './components/SeasonPassModal';
+import { DailySpinModal } from './components/DailySpinModal';
+import { PlayerLockerModal } from './components/PlayerLockerModal';
 
 import { INITIAL_GAMES, Game, UNIVERSAL_CATEGORIES } from './data/games';
 import { UserAccount } from './types';
 import { getActiveUser, setActiveUser, awardPenguinPoints, hasVipTierAccess, isOwnerAccount } from './utils/auth';
+import { awardSeasonXp, recordQuestAction, ensureUserProgression, ARCADE_BORDER_THEMES } from './utils/seasonPass';
 
 import { 
   Gamepad2, 
@@ -72,6 +76,9 @@ export default function App() {
   // Modals state
   const [isPabloHubOpen, setIsPabloHubOpen] = useState(false);
   const [isVipModalOpen, setIsVipModalOpen] = useState(false);
+  const [isSeasonPassOpen, setIsSeasonPassOpen] = useState(false);
+  const [isDailySpinOpen, setIsDailySpinOpen] = useState(false);
+  const [isLockerOpen, setIsLockerOpen] = useState(false);
   const [targetVipGame, setTargetVipGame] = useState<Game | null>(null);
   const [isStealthActive, setIsStealthActive] = useState(false);
   const [snowEnabled, setSnowEnabled] = useState(true);
@@ -268,10 +275,16 @@ export default function App() {
     setSelectedGame(game);
   };
 
-  // Award points on game play
+  // Award points on game play & track Season Pass progression
   const handleGamePlayedSession = (game: Game) => {
-    const updated = awardPenguinPoints(25);
+    let updated = awardPenguinPoints(25);
     if (updated) {
+      try {
+        awardSeasonXp(50, `Played ${game.title}`);
+        recordQuestAction('daily_games_played', 1);
+        const qResult = recordQuestAction('season_games_played', 1);
+        updated = qResult.user;
+      } catch {}
       setCurrentUser({ ...updated });
     }
     // Increment local play count
@@ -434,6 +447,9 @@ export default function App() {
           onSelectGame={handlePlayGame}
           onOpenChromebookModal={() => setIsChromebookModalOpen(true)}
           isChromebookTurbo={isChromebookTurbo}
+          onOpenSeasonPass={() => setIsSeasonPassOpen(true)}
+          onOpenDailySpin={() => setIsDailySpinOpen(true)}
+          onOpenLocker={() => setIsLockerOpen(true)}
         />
 
         <main className="flex-1">
@@ -446,6 +462,8 @@ export default function App() {
           onOpenDiscord={() => setIsDiscordModalOpen(true)}
           onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
           onOpenSidebar={() => setIsSidebarOpen(true)}
+          onOpenSeasonPass={() => setIsSeasonPassOpen(true)}
+          onOpenDailySpin={() => setIsDailySpinOpen(true)}
         />
 
         {/* Pablo Unblocked Announcement Banner */}
@@ -999,6 +1017,13 @@ export default function App() {
         games={games}
         favorites={favorites}
         onOpenChromebookModal={() => setIsChromebookModalOpen(true)}
+        onOpenSeasonPass={() => setIsSeasonPassOpen(true)}
+        onOpenDailySpin={() => setIsDailySpinOpen(true)}
+        onOpenLocker={() => setIsLockerOpen(true)}
+        onOpenVipModal={() => {
+          setTargetVipGame(null);
+          setIsVipModalOpen(true);
+        }}
       />
 
       {/* Owner Admin Analytics & Graphs Panel (Haris Only) */}
@@ -1020,6 +1045,46 @@ export default function App() {
         onClose={() => setIsChromebookModalOpen(false)}
         onTriggerStealth={() => setIsStealthActive(true)}
         onToggleSnow={(en) => setSnowEnabled(en)}
+      />
+
+      {/* Season 1: Neon Frost Pass Modal */}
+      <SeasonPassModal
+        isOpen={isSeasonPassOpen}
+        onClose={() => setIsSeasonPassOpen(false)}
+        currentUser={currentUser}
+        onUserUpdated={(u) => setCurrentUser(u)}
+        onOpenVipModal={() => {
+          setIsSeasonPassOpen(false);
+          setIsVipModalOpen(true);
+        }}
+        onOpenLocker={() => {
+          setIsSeasonPassOpen(false);
+          setIsLockerOpen(true);
+        }}
+      />
+
+      {/* Daily Lucky Wheel Modal */}
+      <DailySpinModal
+        isOpen={isDailySpinOpen}
+        onClose={() => setIsDailySpinOpen(false)}
+        currentUser={currentUser}
+        onUserUpdated={(u) => setCurrentUser(u)}
+        onOpenSeasonPass={() => {
+          setIsDailySpinOpen(false);
+          setIsSeasonPassOpen(true);
+        }}
+      />
+
+      {/* Player Locker Modal (Equip Titles, Avatars, Border Themes) */}
+      <PlayerLockerModal
+        isOpen={isLockerOpen}
+        onClose={() => setIsLockerOpen(false)}
+        currentUser={currentUser}
+        onUserUpdated={(u) => setCurrentUser(u)}
+        onOpenSeasonPass={() => {
+          setIsLockerOpen(false);
+          setIsSeasonPassOpen(true);
+        }}
       />
     </div>
   );

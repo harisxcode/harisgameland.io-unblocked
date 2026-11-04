@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { UserAccount } from '../types';
 import { playArcadeSfx } from '../utils/audio';
-import pabloMascotImg from '../assets/images/retro_pablo_mascot_1793055166374.jpg';
+import pabloMascotImg from '../assets/images/retro_penguin_emoji_1793831650652.jpg';
 
 interface MandatoryTermsModalProps {
   isOpen: boolean;
@@ -64,6 +64,7 @@ export function MandatoryTermsModal({
                 src={pabloMascotImg} 
                 alt="Pablo the Penguin" 
                 className="w-full h-full object-cover"
+                style={{ imageRendering: 'pixelated' }}
               />
             </div>
             <div>

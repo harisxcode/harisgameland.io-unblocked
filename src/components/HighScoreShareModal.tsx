@@ -24,7 +24,7 @@ import {
   getGameUnit
 } from '../utils/highScores';
 import { playArcadeSfx } from '../utils/audio';
-import pabloMascotImg from '../assets/images/retro_pablo_mascot_1793055166374.jpg';
+import pabloMascotImg from '../assets/images/retro_penguin_emoji_1793831650652.jpg';
 
 interface HighScoreShareModalProps {
   isOpen: boolean;
@@ -208,7 +208,7 @@ export function HighScoreShareModal({
             {/* Mascot Stamp */}
             <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono text-slate-400">
               <div className="flex items-center gap-1.5 text-cyan-300">
-                <img src={pabloMascotImg} alt="Pablo" className="w-4 h-4 rounded-full" />
+                <img src={pabloMascotImg} alt="Pablo" className="w-4 h-4 rounded-full" style={{ imageRendering: 'pixelated' }} />
                 <span>Pablo Mascot Certified Clean Run</span>
               </div>
               <div className="text-slate-500">

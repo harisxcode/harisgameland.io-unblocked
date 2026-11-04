@@ -11,6 +11,8 @@ interface HeroSectionProps {
   onOpenDiscord?: () => void;
   onOpenAdminPanel?: () => void;
   onOpenSidebar?: () => void;
+  onOpenSeasonPass?: () => void;
+  onOpenDailySpin?: () => void;
 }
 
 export function HeroSection({ 
@@ -20,7 +22,9 @@ export function HeroSection({
   onOpenRatingModal,
   onOpenDiscord,
   onOpenAdminPanel,
-  onOpenSidebar
+  onOpenSidebar,
+  onOpenSeasonPass,
+  onOpenDailySpin
 }: HeroSectionProps) {
   const liveCount = games.filter((g) => g.status === 'live').length;
   const vipCount = games.filter((g) => g.isVipExclusive).length;
@@ -43,6 +47,18 @@ export function HeroSection({
           <span className="text-emerald-400 flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5" /> 100% UNBLOCKED
           </span>
+          {onOpenSeasonPass && (
+            <>
+              <span aria-hidden="true" className="text-slate-600">·</span>
+              <button 
+                onClick={onOpenSeasonPass}
+                className="text-cyan-300 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30"
+              >
+                <span>❄️</span>
+                <span>SEASON 1 PASS: NEON FROST</span>
+              </button>
+            </>
+          )}
         </div>
 
         {/* 2-Column Split: Editorial Headline & Actions on Left, Hero Visual Arena on Right */}
@@ -100,6 +116,26 @@ export function HeroSection({
                 <Gamepad2 className="w-4 h-4" />
                 <span>Explore All Games</span>
               </a>
+
+              {onOpenSeasonPass && (
+                <button
+                  onClick={onOpenSeasonPass}
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-950/90 via-[#07193b] to-blue-950/90 hover:brightness-125 border border-cyan-400/50 text-cyan-300 hover:text-white font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-md shadow-cyan-950/40"
+                >
+                  <span className="text-base">❄️</span>
+                  <span>Season 1 Pass</span>
+                </button>
+              )}
+
+              {onOpenDailySpin && (
+                <button
+                  onClick={onOpenDailySpin}
+                  className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 hover:text-white border border-amber-400/50 font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-md shadow-amber-950/30"
+                >
+                  <span className="text-base">🎡</span>
+                  <span>Daily Wheel</span>
+                </button>
+              )}
 
               <a
                 href="#arcade-chat-lounge"

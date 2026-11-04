@@ -16,7 +16,7 @@ import {
 import { ChatComment, Game } from '../types';
 import { playArcadeSfx } from '../utils/audio';
 import { getAllComments, postComment, toggleCommentLike } from '../utils/comments';
-import pabloMascotImg from '../assets/images/retro_pablo_mascot_1793055166374.jpg';
+import pabloMascotImg from '../assets/images/retro_penguin_emoji_1793831650652.jpg';
 
 interface ArcadeChatSectionProps {
   currentUserUsername?: string;

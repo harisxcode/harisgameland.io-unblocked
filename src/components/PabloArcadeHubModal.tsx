@@ -26,8 +26,9 @@ import { UserAccount, PenguinSnack } from '../types';
 import { PENGUIN_SNACKS, feedPabloSnack, hasVipTierAccess, isOwnerAccount } from '../utils/auth';
 import { PABLO_PROMO_TIPS, PABLO_JOKES } from '../data/pabloHubData';
 import { musicEngine } from '../utils/audioMusic';
-import pabloMascotImg from '../assets/images/retro_pablo_mascot_1793055166374.jpg';
+import pabloMascotImg from '../assets/images/retro_penguin_emoji_1793831650652.jpg';
 import { PabloRetroIntro } from './PabloRetroIntro';
+import { recordQuestAction } from '../utils/seasonPass';
 
 interface PabloArcadeHubModalProps {
   isOpen: boolean;
@@ -69,7 +70,13 @@ export const PabloArcadeHubModal: React.FC<PabloArcadeHubModalProps> = ({
   const handleFeed = (snack: PenguinSnack) => {
     const res = feedPabloSnack(snack.id);
     if (res.success && res.user) {
-      onUserUpdated(res.user);
+      try {
+        recordQuestAction('daily_pablo_feed', 1);
+        const q2 = recordQuestAction('season_pablo_feed', 1);
+        onUserUpdated(q2.user);
+      } catch {
+        onUserUpdated(res.user);
+      }
       setFeedingStatus(res.message);
       try {
         confetti({
@@ -114,8 +121,9 @@ export const PabloArcadeHubModal: React.FC<PabloArcadeHubModalProps> = ({
             <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-cyan-400 shadow-md shadow-cyan-500/30 ring-2 ring-cyan-500/20">
               <img 
                 src={pabloMascotImg} 
-                alt="Pablo the Gamer Penguin" 
+                alt="Pablo the Retro Penguin Emoji Mascot" 
                 className="w-full h-full object-cover"
+                style={{ imageRendering: 'pixelated' }}
               />
               <span className="absolute bottom-0 inset-x-0 bg-cyan-950/80 text-[9px] font-bold text-center text-cyan-300 uppercase py-0.5">
                 PABLO

@@ -39,7 +39,8 @@ import { isOwnerAccount } from '../utils/auth';
 import { playArcadeSfx } from '../utils/audio';
 import { LegalTab } from './LegalModal';
 import { CategoryFilter } from './GameFilterControls';
-import pabloMascotImg from '../assets/images/retro_pablo_mascot_1793055166374.jpg';
+import pabloMascotImg from '../assets/images/retro_penguin_emoji_1793831650652.jpg';
+import { calculateTier, checkDailySpinStatus } from '../utils/seasonPass';
 
 interface SidebarMenuProps {
   isOpen: boolean;
@@ -58,6 +59,10 @@ interface SidebarMenuProps {
   games?: Game[];
   favorites?: string[];
   onOpenChromebookModal?: () => void;
+  onOpenSeasonPass?: () => void;
+  onOpenDailySpin?: () => void;
+  onOpenLocker?: () => void;
+  onOpenVipModal?: () => void;
 }
 
 export function SidebarMenu({
@@ -76,9 +81,15 @@ export function SidebarMenu({
   onSelectCategory,
   games = [],
   favorites = [],
-  onOpenChromebookModal
+  onOpenChromebookModal,
+  onOpenSeasonPass,
+  onOpenDailySpin,
+  onOpenLocker,
+  onOpenVipModal
 }: SidebarMenuProps) {
   const isOwner = isOwnerAccount(currentUser);
+  const tierInfo = currentUser ? calculateTier(currentUser.seasonPassXp || 0) : null;
+  const spinStatus = checkDailySpinStatus(currentUser);
   const [copiedEmail, setCopiedEmail] = useState(false);
 
   const OWNER_EMAIL = 'harisxcode@gmail.com';
@@ -141,6 +152,7 @@ export function SidebarMenu({
                 src={pabloMascotImg} 
                 alt="Pablo Mascot" 
                 className="w-full h-full object-cover" 
+                style={{ imageRendering: 'pixelated' }}
               />
             </div>
             <div>
@@ -223,6 +235,110 @@ export function SidebarMenu({
               )}
             </div>
           )}
+
+          {/* ========================================================
+              SEASON 1 PASS & ARCADE PROGRESSION
+             ======================================================== */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs font-mono uppercase tracking-wider text-cyan-400 font-bold px-1">
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Season 1 &amp; Arcade Hub</span>
+              </span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-bold">
+                NEW
+              </span>
+            </div>
+
+            <div className="space-y-1.5 bg-[#060e22] p-2 rounded-2xl border border-cyan-500/20 shadow-inner">
+              {/* Season 1 Pass Button */}
+              {onOpenSeasonPass && (
+                <button
+                  onClick={() => {
+                    playArcadeSfx('click');
+                    onOpenSeasonPass();
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-gradient-to-r from-cyan-950/70 to-blue-950/70 hover:from-cyan-900/80 hover:to-blue-900/80 border border-cyan-500/40 flex items-center justify-between text-left transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">❄️</span>
+                    <div>
+                      <div className="font-bold text-xs text-white group-hover:text-cyan-300 transition-colors">
+                        Season 1: Neon Frost Pass
+                      </div>
+                      <div className="text-[10px] text-cyan-300/80 font-mono">
+                        Tier {tierInfo?.currentTier || 0} / 20 · 28 Days Left
+                      </div>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-md bg-cyan-500 text-slate-950 font-black font-mono text-[10px] uppercase">
+                    View
+                  </span>
+                </button>
+              )}
+
+              {/* Daily Lucky Wheel Button */}
+              {onOpenDailySpin && (
+                <button
+                  onClick={() => {
+                    playArcadeSfx('click');
+                    onOpenDailySpin();
+                  }}
+                  className={`w-full p-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer group ${
+                    spinStatus.canSpinFree
+                      ? 'bg-amber-950/40 border-amber-400/60 hover:bg-amber-950/60 shadow-md shadow-amber-500/10'
+                      : 'bg-slate-900/60 border-slate-800 hover:bg-slate-850'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">🎡</span>
+                    <div>
+                      <div className="font-bold text-xs text-white group-hover:text-amber-300 transition-colors flex items-center gap-1.5">
+                        <span>Daily Lucky Wheel</span>
+                        {spinStatus.canSpinFree && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono">
+                        {spinStatus.canSpinFree ? '⭐ Free spin ready!' : `Streak: Day ${spinStatus.streak}`}
+                      </div>
+                    </div>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-md font-mono text-[10px] font-bold uppercase ${
+                    spinStatus.canSpinFree ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-300'
+                  }`}>
+                    {spinStatus.canSpinFree ? 'Spin Free' : 'Spin'}
+                  </span>
+                </button>
+              )}
+
+              {/* Player Locker Button */}
+              {onOpenLocker && (
+                <button
+                  onClick={() => {
+                    playArcadeSfx('click');
+                    onOpenLocker();
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-slate-900/60 hover:bg-slate-850 border border-slate-800 hover:border-cyan-500/40 flex items-center justify-between text-left transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">🎒</span>
+                    <div>
+                      <div className="font-bold text-xs text-white group-hover:text-cyan-300 transition-colors">
+                        Player Locker
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono">
+                        {currentUser?.activeTitle || 'Equip Titles & Themes'}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 font-mono text-[10px] uppercase">
+                    Equip
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
 
           {/* ========================================================
               GAME CATEGORIES & FILTERS (SIDEBAR FILTER OPTIONS)

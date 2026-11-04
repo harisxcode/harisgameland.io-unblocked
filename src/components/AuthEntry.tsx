@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { UserAccount } from '../types';
 import { getAllUsers, setActiveUser, createPlayerAccount, isOwnerAccount } from '../utils/auth';
-import pabloMascotImg from '../assets/images/retro_pablo_mascot_1793055166374.jpg';
+import pabloMascotImg from '../assets/images/retro_penguin_emoji_1793831650652.jpg';
 import { LegalModal, LegalTab } from './LegalModal';
 
 interface AuthEntryProps {
@@ -98,8 +98,9 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
           <div className="relative w-24 h-24 mb-3 rounded-2xl overflow-hidden border-2 border-cyan-400 shadow-lg shadow-cyan-500/30 ring-4 ring-cyan-500/10">
             <img 
               src={pabloMascotImg} 
-              alt="Pablo the Penguin Mascot" 
+              alt="Pablo the Retro Penguin Emoji Mascot" 
               className="w-full h-full object-cover"
+              style={{ imageRendering: 'pixelated' }}
             />
             <div className="absolute bottom-0 inset-x-0 bg-black/60 backdrop-blur-xs py-0.5 text-[10px] font-bold text-cyan-300 uppercase tracking-widest text-center">
               PABLO

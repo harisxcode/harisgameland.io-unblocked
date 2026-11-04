@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, MessageCircle, Heart, X, Fish } from 'lucide-react';
-import pabloMascotImg from '../assets/images/retro_pablo_mascot_1793055166374.jpg';
+import pabloMascotImg from '../assets/images/retro_penguin_emoji_1793831650652.jpg';
 
 interface PabloMascotProps {
   onOpenHub: () => void;
@@ -8,11 +8,13 @@ interface PabloMascotProps {
 }
 
 const PABLO_SPEECH_LINES = [
+  "Season 1: Neon Frost Pass is live! Level up to Tier 20 for exclusive titles & themes! ❄️✨",
+  "Don't forget your Daily Lucky Wheel spin today for free tokens & XP drops! 🎡🪙",
   "Hey! Haris Game Center is running with 0% lag and 100% unblocked play! 🐧⚡",
   "Got 500 Penguin Points? Unlock Slope 3D, 1v1.LOL, Escape Road & Drive Mad VIP! 👑",
   "Feeling hungry? Visit my Arcade Hub to feed me delicious Arctic Fish! 🐟",
   "Press ']' or 'Esc' anytime for our stealth teacher disguise cloak! 🤫",
-  "Enjoying the games? Every play gives you +25 free Penguin Points! 🎮✨"
+  "Enjoying the games? Every play gives you +25 free Penguin Points & +50 Season XP! 🎮✨"
 ];
 
 export const PabloMascot: React.FC<PabloMascotProps> = ({
@@ -86,8 +88,9 @@ export const PabloMascot: React.FC<PabloMascotProps> = ({
         >
           <img
             src={pabloMascotImg}
-            alt="Pablo the Gamer Penguin Mascot"
+            alt="Pablo the Retro Penguin Emoji Mascot"
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            style={{ imageRendering: 'pixelated' }}
           />
           <div className="absolute bottom-0 inset-x-0 bg-cyan-950/90 py-0.5 text-center text-[9px] font-black text-cyan-300 uppercase tracking-wider">
             PABLO

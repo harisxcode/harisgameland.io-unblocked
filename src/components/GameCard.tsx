@@ -300,7 +300,11 @@ export function GameCard({
         )}
 
         {/* Action Buttons Footer */}
-        <div className="pt-3 border-t border-slate-800/80 mt-auto flex items-center gap-2">
+        <div className="pt-2 pb-1 flex items-center justify-between text-[10px] font-mono text-slate-400">
+          <span className="text-amber-300 font-bold flex items-center gap-1">🪙 +25 Pts</span>
+          <span className="text-cyan-400 font-bold flex items-center gap-1">❄️ +50 S1 XP</span>
+        </div>
+        <div className="pt-2 border-t border-slate-800/80 mt-auto flex items-center gap-2">
           {game.status === 'live' ? (
             <>
               {isLocked ? (

@@ -26,8 +26,9 @@ import {
 import { UserAccount } from '../types';
 import { isOwnerAccount } from '../utils/auth';
 import { Game } from '../data/games';
-import pabloMascotImg from '../assets/images/retro_pablo_mascot_1793055166374.jpg';
+import pabloMascotImg from '../assets/images/retro_penguin_emoji_1793831650652.jpg';
 import { LegalTab } from './LegalModal';
+import { calculateTier, checkDailySpinStatus } from '../utils/seasonPass';
 
 interface NavbarProps {
   currentUser: UserAccount | null;
@@ -50,6 +51,9 @@ interface NavbarProps {
   onSelectGame?: (game: Game) => void;
   onOpenChromebookModal?: () => void;
   isChromebookTurbo?: boolean;
+  onOpenSeasonPass?: () => void;
+  onOpenDailySpin?: () => void;
+  onOpenLocker?: () => void;
 }
 
 export function Navbar({ 
@@ -72,7 +76,10 @@ export function Navbar({
   games = [],
   onSelectGame,
   onOpenChromebookModal,
-  isChromebookTurbo = true
+  isChromebookTurbo = true,
+  onOpenSeasonPass,
+  onOpenDailySpin,
+  onOpenLocker
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
@@ -83,6 +90,8 @@ export function Navbar({
   const points = currentUser?.penguinPoints || 0;
   const isVip = !!currentUser?.isVip;
   const isOwner = isOwnerAccount(currentUser);
+  const tierInfo = currentUser ? calculateTier(currentUser.seasonPassXp || 0) : null;
+  const spinStatus = checkDailySpinStatus(currentUser);
 
   // Filter matching games for live suggestions dropdown
   const matchingGames = useMemo(() => {
@@ -166,6 +175,7 @@ export function Navbar({
                 src={pabloMascotImg}
                 alt="Pablo Mascot"
                 className="w-full h-full object-cover"
+                style={{ imageRendering: 'pixelated' }}
               />
             </div>
             <div className="hidden min-[480px]:block">
@@ -408,9 +418,58 @@ export function Navbar({
                 )}
               </button>
 
+              {/* Season 1 Pass Quick Launcher */}
+              {onOpenSeasonPass && (
+                <button
+                  onClick={onOpenSeasonPass}
+                  className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-950/80 via-[#07193b] to-blue-950/80 hover:brightness-125 border border-cyan-400/50 text-cyan-300 font-bold text-xs shadow-sm shadow-cyan-950/50 transition-all cursor-pointer group"
+                  title="Open Season 1: Neon Frost Pass (Tiers 1-20)"
+                >
+                  <span className="text-sm">❄️</span>
+                  <span className="hidden xl:inline">S1 PASS</span>
+                  <span className="px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-mono text-[10px] font-bold">
+                    T{tierInfo?.currentTier || 0}
+                  </span>
+                </button>
+              )}
+
+              {/* Daily Lucky Wheel Shortcut */}
+              {onOpenDailySpin && (
+                <button
+                  onClick={onOpenDailySpin}
+                  className={`hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                    spinStatus.canSpinFree
+                      ? 'bg-amber-500/15 border-amber-400 text-amber-300 hover:bg-amber-500/25 shadow-sm shadow-amber-500/20 animate-pulse'
+                      : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white'
+                  }`}
+                  title={spinStatus.canSpinFree ? 'Free Daily Lucky Wheel spin is ready!' : 'Daily Lucky Wheel'}
+                >
+                  <span className="text-sm">🎡</span>
+                  <span>SPIN</span>
+                  {spinStatus.canSpinFree && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                  )}
+                </button>
+              )}
+
+              {/* Player Locker / Badges Shortcut */}
+              {onOpenLocker && (
+                <button
+                  onClick={onOpenLocker}
+                  className="hidden 2xl:inline-flex items-center gap-1 px-2 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-slate-300 hover:text-white hover:border-cyan-400 text-xs transition-colors cursor-pointer"
+                  title="Open Player Locker (Equip titles, avatars & border themes)"
+                >
+                  <span className="text-sm">🎒</span>
+                </button>
+              )}
+
               {/* Player Tag & Sign Out */}
               <div className="flex items-center gap-1 pl-0.5">
-                <span className="text-base sm:text-lg p-1 bg-slate-900 rounded-lg border border-slate-800" title={`Signed in as ${currentUser.username}`}>
+                <span 
+                  onClick={onOpenLocker || onOpenPabloHub}
+                  className="text-base sm:text-lg p-1 bg-slate-900 rounded-lg border border-slate-800 cursor-pointer hover:border-cyan-400 transition-colors" 
+                  title={`Signed in as ${currentUser.username} (${currentUser.activeTitle || 'Arcade Challenger'}). Click to customize.`}
+                >
                   {currentUser.avatar || '🐧'}
                 </span>
                 <button
@@ -486,6 +545,58 @@ export function Navbar({
               {currentUser?.vipTier ? `${currentUser.vipTier} VIP` : 'Upgrade →'}
             </span>
           </button>
+
+          {/* Mobile Season Pass Button */}
+          {onOpenSeasonPass && (
+            <button
+              onClick={() => { onOpenSeasonPass(); setMobileMenuOpen(false); }}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-gradient-to-r from-cyan-950/80 to-blue-950/80 border border-cyan-400/50 text-cyan-300 text-xs font-bold cursor-pointer"
+            >
+              <span className="flex items-center gap-1.5">
+                <span>❄️</span>
+                <span>Season 1: Neon Frost Pass</span>
+              </span>
+              <span className="font-mono text-[10px] bg-cyan-500/20 px-2 py-0.5 rounded border border-cyan-500/30">
+                Tier {tierInfo?.currentTier || 0} / 20
+              </span>
+            </button>
+          )}
+
+          {/* Mobile Daily Wheel Button */}
+          {onOpenDailySpin && (
+            <button
+              onClick={() => { onOpenDailySpin(); setMobileMenuOpen(false); }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                spinStatus.canSpinFree
+                  ? 'bg-amber-950/60 border-amber-400 text-amber-300 animate-pulse'
+                  : 'bg-slate-900 border-slate-800 text-slate-300'
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                <span>🎡</span>
+                <span>Daily Lucky Wheel</span>
+              </span>
+              <span className="font-mono text-[10px] text-amber-300 font-bold">
+                {spinStatus.canSpinFree ? 'FREE SPIN READY!' : 'Spin for Pts'}
+              </span>
+            </button>
+          )}
+
+          {/* Mobile Player Locker */}
+          {onOpenLocker && (
+            <button
+              onClick={() => { onOpenLocker(); setMobileMenuOpen(false); }}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 text-xs font-bold cursor-pointer hover:border-cyan-400"
+            >
+              <span className="flex items-center gap-1.5">
+                <span>🎒</span>
+                <span>Player Locker (Titles &amp; Themes)</span>
+              </span>
+              <span className="font-mono text-[10px] text-cyan-300">
+                {currentUser?.activeTitle || 'Equip'}
+              </span>
+            </button>
+          )}
 
           {/* Open Full Sidebar Menu */}
           <button

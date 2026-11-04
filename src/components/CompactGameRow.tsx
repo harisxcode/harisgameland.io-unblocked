@@ -133,6 +133,12 @@ export function CompactGameRow({
               <Flame className="w-3 h-3 text-orange-400 fill-orange-400" />
               <span>{(game.playCount / 1000).toFixed(0)}k plays</span>
             </div>
+
+            <span className="text-slate-600 hidden sm:inline">·</span>
+
+            <span className="text-[11px] font-mono text-cyan-400 font-bold hidden sm:inline">
+              ❄️ +50 S1 XP
+            </span>
           </div>
 
           {/* Controls hint */}

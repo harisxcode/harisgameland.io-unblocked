@@ -39,6 +39,7 @@ import {
 import { getAllComments, postComment, toggleCommentLike } from '../utils/comments';
 import { playArcadeSfx } from '../utils/audio';
 import { PabloRetroIntro } from './PabloRetroIntro';
+import { recordQuestAction } from '../utils/seasonPass';
 
 export function isRetroGame(game?: Game | null): boolean {
   if (!game) return false;
@@ -362,6 +363,10 @@ export function GameModal({
     playArcadeSfx('click');
 
     try {
+      recordQuestAction('daily_score_shared', 1);
+    } catch {}
+
+    try {
       confetti({ particleCount: 75, spread: 80, origin: { y: 0.7 } });
     } catch {}
 
@@ -539,7 +544,12 @@ export function GameModal({
             {/* Pablo Arcade Retro Games Intro Overlay */}
             <PabloRetroIntro
               isOpen={showRetroIntro}
-              onComplete={() => setShowRetroIntro(false)}
+              onComplete={() => {
+                setShowRetroIntro(false);
+                try {
+                  recordQuestAction('daily_retro_intro', 1);
+                } catch {}
+              }}
               gameTitle={game.title}
               gameGenre={game.genre}
             />

@@ -8,7 +8,7 @@ import harisArcadeThumb from '../assets/images/thumb_haris_arcade_1792546847417.
 import escapeRoadThumb from '../assets/images/thumb_escape_road_1792766021496.jpg';
 import musicStreamThumb from '../assets/images/thumb_music_stream_1792979603219.jpg';
 import driveUThumb from '../assets/images/thumb_drive_u_1792448613664.jpg';
-import pabloMascotImg from '../assets/images/retro_pablo_mascot_1793055166374.jpg';
+import pabloMascotImg from '../assets/images/retro_penguin_emoji_1793831650652.jpg';
 import slopeThumb from '../assets/images/thumb_slope_tunnel_1793055217118.jpg';
 import arenaThumb from '../assets/images/thumb_1v1_arena_1793055229393.jpg';
 import driveMadThumb from '../assets/images/thumb_drive_mad_1793055241661.jpg';

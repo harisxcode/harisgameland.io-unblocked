@@ -106,6 +106,17 @@ export interface UserAccount {
     quantity: number;
   }[];
   isAdmin?: boolean;
+  // Season Pass & Progression
+  seasonPassXp?: number;
+  hasSeasonPassPremium?: boolean;
+  claimedFreeTiers?: number[];
+  claimedPremiumTiers?: number[];
+  lastDailySpinAt?: string | null;
+  dailySpinStreak?: number;
+  equippedBorderTheme?: string;
+  unlockedBorderThemes?: string[];
+  questProgress?: Record<string, number>;
+  completedQuestIds?: string[];
 }
 
 export interface PenguinSnack {
@@ -166,4 +177,45 @@ export interface ChatComment {
   likedByMe?: boolean;
   pinned?: boolean;
 }
+
+export type SeasonRewardType = 'tokens' | 'title' | 'avatar' | 'snack' | 'theme';
+
+export interface SeasonRewardItem {
+  type: SeasonRewardType;
+  value: string | number;
+  title: string;
+  icon: string;
+  description: string;
+  highlight?: boolean;
+}
+
+export interface SeasonPassRewardTier {
+  tier: number;
+  xpRequired: number;
+  freeReward: SeasonRewardItem;
+  premiumReward: SeasonRewardItem;
+}
+
+export interface SeasonQuest {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  targetCount: number;
+  xpReward: number;
+  tokenReward: number;
+  category: 'daily' | 'seasonal';
+  progressKey: string;
+}
+
+export interface DailySpinSlice {
+  id: string;
+  title: string;
+  icon: string;
+  type: 'tokens' | 'xp' | 'snack' | 'title';
+  value: number | string;
+  rarity: 'common' | 'uncommon' | 'rare' | 'legendary';
+  color: string;
+}
+
 

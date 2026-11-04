@@ -14,7 +14,7 @@ import {
   Radio
 } from 'lucide-react';
 import { playArcadeSfx } from '../utils/audio';
-import pabloMascotImg from '../assets/images/retro_pablo_mascot_1793055166374.jpg';
+import pabloMascotImg from '../assets/images/retro_penguin_emoji_1793831650652.jpg';
 
 interface GameGrindersDiscordModalProps {
   isOpen: boolean;
@@ -76,7 +76,7 @@ export function GameGrindersDiscordModal({ isOpen, onClose }: GameGrindersDiscor
 
           <div className="flex items-center gap-4">
             <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-[#5865F2] shadow-lg shadow-[#5865F2]/40 shrink-0">
-              <img src={pabloMascotImg} alt="Game Grinders Mascot" className="w-full h-full object-cover" />
+              <img src={pabloMascotImg} alt="Game Grinders Mascot" className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
               <span className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-slate-950" title="Online" />
             </div>
 
