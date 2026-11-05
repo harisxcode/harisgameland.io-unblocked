@@ -42,6 +42,11 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
 
   const handleSignIn = (userToLogin?: UserAccount) => {
     if (userToLogin) {
+      const isOwner = isOwnerAccount(userToLogin);
+      // User request: "when a new account is made or logged in to, for the tokens to be set automatically to 0"
+      if (!isOwner && (!userToLogin.penguinPoints || userToLogin.penguinPoints > 0)) {
+        userToLogin.penguinPoints = 0;
+      }
       setActiveUser(userToLogin);
       onLoginSuccess(userToLogin);
       return;
@@ -57,6 +62,10 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
     );
 
     if (found) {
+      const isOwner = isOwnerAccount(found);
+      if (!isOwner) {
+        found.penguinPoints = 0;
+      }
       setActiveUser(found);
       onLoginSuccess(found);
     } else {

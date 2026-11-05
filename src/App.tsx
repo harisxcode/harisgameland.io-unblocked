@@ -41,6 +41,7 @@ import { PlayerLockerModal } from './components/PlayerLockerModal';
 
 import { PabloCharityModal } from './components/PabloCharityModal';
 import { YouTubePlayerModal } from './components/YouTubePlayerModal';
+import { TokenPacksModal } from './components/TokenPacksModal';
 import { INITIAL_GAMES, Game, UNIVERSAL_CATEGORIES } from './data/games';
 import { UserAccount } from './types';
 import { getActiveUser, setActiveUser, awardPenguinPoints, hasVipTierAccess, isOwnerAccount, calculateGameTokenReward, getTrialRemainingSeconds } from './utils/auth';
@@ -83,6 +84,7 @@ export default function App() {
   const [isLockerOpen, setIsLockerOpen] = useState(false);
   const [isCharityModalOpen, setIsCharityModalOpen] = useState(false);
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
+  const [isTokenPacksOpen, setIsTokenPacksOpen] = useState(false);
   const [targetVipGame, setTargetVipGame] = useState<Game | null>(null);
   const [isStealthActive, setIsStealthActive] = useState(false);
   const [snowEnabled, setSnowEnabled] = useState(true);
@@ -258,8 +260,13 @@ export default function App() {
     setHasAgreedTerms(alreadyAgreed);
   };
 
-  // Game execution handler
+  // Game execution handler - User requested: "you have to sign in in order to play the games"
   const handlePlayGame = (game: Game) => {
+    if (!currentUser) {
+      handleSignOut();
+      return;
+    }
+
     // Check VIP requirement against player's tier level
     if (game.isVipExclusive) {
       const isOwner = isOwnerAccount(currentUser);
@@ -467,6 +474,8 @@ export default function App() {
           onOpenLocker={() => setIsLockerOpen(true)}
           onOpenCharityModal={() => setIsCharityModalOpen(true)}
           onOpenYouTubeModal={() => setIsYouTubeModalOpen(true)}
+          onOpenTokenPacks={() => setIsTokenPacksOpen(true)}
+          onOpenSignIn={() => handleSignOut()}
         />
 
         <main className="flex-1">
@@ -1043,6 +1052,8 @@ export default function App() {
         onOpenLocker={() => setIsLockerOpen(true)}
         onOpenCharityModal={() => setIsCharityModalOpen(true)}
         onOpenYouTubeModal={() => setIsYouTubeModalOpen(true)}
+        onOpenTokenPacks={() => setIsTokenPacksOpen(true)}
+        onOpenSignIn={() => handleSignOut()}
         onOpenVipModal={() => {
           setTargetVipGame(null);
           setIsVipModalOpen(true);
@@ -1122,6 +1133,15 @@ export default function App() {
       <YouTubePlayerModal
         isOpen={isYouTubeModalOpen}
         onClose={() => setIsYouTubeModalOpen(false)}
+      />
+
+      {/* In-Game Token Store Modal (USD Token Packs) */}
+      <TokenPacksModal
+        isOpen={isTokenPacksOpen}
+        onClose={() => setIsTokenPacksOpen(false)}
+        currentUser={currentUser}
+        onUserUpdated={(u) => setCurrentUser(u)}
+        onOpenSignIn={() => handleSignOut()}
       />
     </div>
   );

@@ -123,6 +123,19 @@ export interface UserAccount {
   trialExpiresAt?: string;
 }
 
+export interface TokenPack {
+  id: string;
+  name: string;
+  tokens: number;
+  bonusTokens: number;
+  priceUsd: number;
+  popular?: boolean;
+  bestValue?: boolean;
+  icon: string;
+  description: string;
+  badge?: string;
+}
+
 export interface PenguinSnack {
   id: string;
   name: string;

@@ -1,4 +1,4 @@
-import { UserAccount, PenguinSnack, VipTierLevel, VipTierDefinition } from '../types';
+import { UserAccount, PenguinSnack, VipTierLevel, VipTierDefinition, TokenPack } from '../types';
 
 const STORAGE_KEY_USERS = 'haris_gamecenter_users_v3';
 const STORAGE_KEY_ACTIVE_USER = 'haris_gamecenter_active_user_v3';
@@ -285,6 +285,50 @@ export function hasVipTierAccess(
   return userRank >= requiredRank;
 }
 
+export const TOKEN_PACKS: TokenPack[] = [
+  {
+    id: 'pack-starter',
+    name: 'Starter Grinder Pouch',
+    tokens: 250,
+    bonusTokens: 0,
+    priceUsd: 1.99,
+    icon: '🪙',
+    description: 'Perfect starter pack to grab snack treats for Pablo and quick titles.'
+  },
+  {
+    id: 'pack-popular',
+    name: 'Arcade Champion Chest',
+    tokens: 600,
+    bonusTokens: 100, // Total 700
+    priceUsd: 4.49,
+    popular: true,
+    badge: 'MOST POPULAR',
+    icon: '💰',
+    description: 'Instantly unlock Regular VIP or stock up on gourmet glacial treats.'
+  },
+  {
+    id: 'pack-highroller',
+    name: 'Glacial Gold Vault',
+    tokens: 1200,
+    bonusTokens: 300, // Total 1500
+    priceUsd: 8.99,
+    bestValue: true,
+    badge: 'BEST VALUE',
+    icon: '👑',
+    description: 'Enough tokens to unlock Gold VIP and max out Pablo affection.'
+  },
+  {
+    id: 'pack-overlord',
+    name: 'Diamond Overlord Trove',
+    tokens: 2500,
+    bonusTokens: 1000, // Total 3500
+    priceUsd: 18.99,
+    badge: 'MAX TOKENS',
+    icon: '💎',
+    description: 'The supreme arcade treasure. Unlock Diamond VIP, top rank, and unlimited snacks.'
+  }
+];
+
 export function getAllUsers(): UserAccount[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_USERS);
@@ -312,24 +356,29 @@ export function getActiveUser(): UserAccount | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_ACTIVE_USER);
     if (raw) {
-      const user = JSON.parse(raw);
+      const user: UserAccount = JSON.parse(raw);
       // Ensure tier is standardized
-      if (user.isVip && (!user.vipTier || user.vipTier === 'Gold' || user.vipTier === 'Diamond')) {
+      if (user.isVip && (!user.vipTier || String(user.vipTier).toLowerCase() === 'gold' || String(user.vipTier).toLowerCase() === 'diamond')) {
         const lower = String(user.vipTier || 'regular').toLowerCase() as VipTierLevel;
         user.vipTier = (lower === 'gold' || lower === 'diamond') ? lower : 'regular';
       }
       return user;
     }
-    // Default to Haris owner profile
-    return DEFAULT_ACCOUNTS[0];
+    // No active user saved in session -> return null so login is required!
+    return null;
   } catch {
-    return DEFAULT_ACCOUNTS[0];
+    return null;
   }
 }
 
 export function setActiveUser(user: UserAccount | null): void {
   try {
     if (user) {
+      // User requested: When a new account is made or logged in to, tokens are set automatically to 0 (except for owner Haris)
+      const isHaris = isOwnerAccount(user);
+      if (!isHaris && (user.penguinPoints === undefined || user.penguinPoints === null)) {
+        user.penguinPoints = 0;
+      }
       localStorage.setItem(STORAGE_KEY_ACTIVE_USER, JSON.stringify(user));
       const users = getAllUsers();
       const idx = users.findIndex((u) => u.id === user.id);
@@ -641,5 +690,36 @@ export function feedPabloSnack(snackId: string): { success: boolean; message: st
     success: true,
     message: snack.tasteReaction,
     user
+  };
+}
+
+/**
+ * Purchase Token Packs with USD
+ */
+export function buyTokenPackWithUsd(packId: string): {
+  success: boolean;
+  message: string;
+  user?: UserAccount;
+  tokensAdded?: number;
+} {
+  const user = getActiveUser();
+  if (!user) {
+    return { success: false, message: 'Please sign in to buy token packs!' };
+  }
+
+  const pack = TOKEN_PACKS.find(p => p.id === packId);
+  if (!pack) {
+    return { success: false, message: 'Token pack not found.' };
+  }
+
+  const totalTokens = pack.tokens + pack.bonusTokens;
+  user.penguinPoints = (user.penguinPoints || 0) + totalTokens;
+  setActiveUser(user);
+
+  return {
+    success: true,
+    message: `🪙 Purchased ${pack.name} for $${pack.priceUsd.toFixed(2)} USD! +${totalTokens.toLocaleString()} in-game tokens added to your balance!`,
+    user,
+    tokensAdded: totalTokens
   };
 }

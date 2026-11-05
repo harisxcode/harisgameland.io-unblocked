@@ -57,6 +57,8 @@ interface NavbarProps {
   onOpenLocker?: () => void;
   onOpenCharityModal?: () => void;
   onOpenYouTubeModal?: () => void;
+  onOpenTokenPacks?: () => void;
+  onOpenSignIn?: () => void;
 }
 
 export function Navbar({ 
@@ -84,7 +86,9 @@ export function Navbar({
   onOpenDailySpin,
   onOpenLocker,
   onOpenCharityModal,
-  onOpenYouTubeModal
+  onOpenYouTubeModal,
+  onOpenTokenPacks,
+  onOpenSignIn
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
@@ -410,6 +414,18 @@ export function Navbar({
                 <span>{points} Tokens</span>
               </div>
 
+              {/* Buy Tokens USD Packs Button */}
+              {onOpenTokenPacks && (
+                <button
+                  onClick={onOpenTokenPacks}
+                  className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-400/20 to-amber-500/20 border border-amber-400/50 hover:border-amber-300 text-amber-300 hover:text-white font-mono text-xs font-bold transition-all shadow-sm shadow-amber-950/40 cursor-pointer hover:scale-105"
+                  title="Buy Token Packs with USD (Starter, Champion, Gold Vault & Overlord)"
+                >
+                  <Coins className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                  <span>Buy Packs</span>
+                </button>
+              )}
+
               {/* 15-Minute Free Trial Countdown Pill */}
               {currentUser.isTrial && (
                 <div 
@@ -514,13 +530,25 @@ export function Navbar({
                 </span>
                 <button
                   onClick={onSignOut}
-                  className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
-                  title="Sign out or switch gamer tag"
+                  className="flex items-center gap-1 p-1.5 text-slate-400 hover:text-amber-300 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer text-xs font-mono"
+                  title="Switch profile or log into another account"
                 >
                   <LogOut className="w-4 h-4" />
+                  <span className="hidden xl:inline text-[10px]">Switch</span>
                 </button>
               </div>
             </div>
+          )}
+
+          {/* Place to Login when user is null or explicitly wants to sign in */}
+          {!currentUser && onOpenSignIn && (
+            <button
+              onClick={onOpenSignIn}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-cyan-500/25 cursor-pointer"
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>Sign In / Login</span>
+            </button>
           )}
 
           {/* Mobile hamburger */}

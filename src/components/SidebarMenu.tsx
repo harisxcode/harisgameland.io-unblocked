@@ -65,6 +65,8 @@ interface SidebarMenuProps {
   onOpenVipModal?: () => void;
   onOpenCharityModal?: () => void;
   onOpenYouTubeModal?: () => void;
+  onOpenTokenPacks?: () => void;
+  onOpenSignIn?: () => void;
 }
 
 export function SidebarMenu({
@@ -89,7 +91,9 @@ export function SidebarMenu({
   onOpenLocker,
   onOpenVipModal,
   onOpenCharityModal,
-  onOpenYouTubeModal
+  onOpenYouTubeModal,
+  onOpenTokenPacks,
+  onOpenSignIn
 }: SidebarMenuProps) {
   const isOwner = isOwnerAccount(currentUser);
   const tierInfo = currentUser ? calculateTier(currentUser.seasonPassXp || 0) : null;
@@ -239,7 +243,19 @@ export function SidebarMenu({
               ) : (
                 <div className="mt-2 pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] font-mono text-cyan-300">
                   <span className="truncate max-w-[140px]">{currentUser.activeTitle || (currentUser.isVip ? 'VIP Member' : 'Standard Gamer')}</span>
-                  <span className="uppercase text-amber-300 font-bold shrink-0">{currentUser.vipTier ? `${currentUser.vipTier} VIP` : `${currentUser.gamesPlayedCount} plays`}</span>
+                  {onOpenTokenPacks ? (
+                    <button
+                      onClick={() => {
+                        playArcadeSfx('click');
+                        onOpenTokenPacks();
+                      }}
+                      className="px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-bold text-[9px] uppercase hover:bg-amber-300 transition-colors cursor-pointer"
+                    >
+                      + Buy Tokens
+                    </button>
+                  ) : (
+                    <span className="uppercase text-amber-300 font-bold shrink-0">{currentUser.vipTier ? `${currentUser.vipTier} VIP` : `${currentUser.gamesPlayedCount} plays`}</span>
+                  )}
                 </div>
               )}
             </div>
@@ -401,6 +417,35 @@ export function SidebarMenu({
                   </div>
                   <span className="px-2 py-0.5 rounded-md bg-red-500/20 text-red-300 font-mono text-[10px] uppercase font-bold">
                     Watch
+                  </span>
+                </button>
+              )}
+
+              {/* In-Game Token Store Button (Buy Tokens USD) */}
+              {onOpenTokenPacks && (
+                <button
+                  onClick={() => {
+                    playArcadeSfx('click');
+                    onOpenTokenPacks();
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/40 hover:border-amber-300 flex items-center justify-between text-left transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">🪙</span>
+                    <div>
+                      <div className="font-bold text-xs text-amber-300 group-hover:text-amber-200 transition-colors flex items-center gap-1.5">
+                        <span>Buy Tokens (USD)</span>
+                        <span className="px-1.5 py-0.2 rounded text-[8px] bg-amber-400 text-slate-950 font-mono font-black">
+                          PACKS
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono">
+                        Starter, Champion, Vault &amp; Overlord
+                      </div>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-mono text-[10px] uppercase font-black">
+                    Store
                   </span>
                 </button>
               )}
