@@ -117,6 +117,10 @@ export interface UserAccount {
   unlockedBorderThemes?: string[];
   questProgress?: Record<string, number>;
   completedQuestIds?: string[];
+  // 15-Minute Free Trial
+  isTrial?: boolean;
+  trialStartedAt?: string;
+  trialExpiresAt?: string;
 }
 
 export interface PenguinSnack {
@@ -217,5 +221,28 @@ export interface DailySpinSlice {
   rarity: 'common' | 'uncommon' | 'rare' | 'legendary';
   color: string;
 }
+
+export interface CharityDonation {
+  id: string;
+  donorName: string;
+  donorEmail: string;
+  amountUsd: number;
+  tokensContributed?: number;
+  paymentMethod: 'card' | 'paypal' | 'points';
+  message: string;
+  timestamp: string;
+  receiptNumber: string;
+}
+
+export interface YouTubeVideoItem {
+  id: string;
+  title: string;
+  channel: string;
+  category: 'music' | 'gameplay' | 'speedrun' | 'chill';
+  duration: string;
+  thumbnailUrl: string;
+  description: string;
+}
+
 
 

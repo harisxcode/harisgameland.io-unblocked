@@ -40,6 +40,7 @@ import { getAllComments, postComment, toggleCommentLike } from '../utils/comment
 import { playArcadeSfx } from '../utils/audio';
 import { PabloRetroIntro } from './PabloRetroIntro';
 import { recordQuestAction } from '../utils/seasonPass';
+import { calculateGameTokenReward } from '../utils/auth';
 
 export function isRetroGame(game?: Game | null): boolean {
   if (!game) return false;
@@ -428,9 +429,24 @@ export function GameModal({
             <span className="hidden sm:inline text-xs text-slate-400 font-mono">
               · {game.genre}
             </span>
-            <span className="inline-flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded">
-              <Coins className="w-3 h-3 text-amber-400" /> +25 Pts Earned!
-            </span>
+            {(() => {
+              const { totalTokens, vipBonus } = calculateGameTokenReward(game, currentUser);
+              return (
+                <span className={`inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded border ${
+                  game.isVipExclusive 
+                    ? 'text-amber-300 bg-amber-500/20 border-amber-500/40 font-bold' 
+                    : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                }`}>
+                  <Coins className="w-3 h-3 text-amber-400" />
+                  <span>+{totalTokens} In-Game Tokens</span>
+                  {vipBonus > 0 && (
+                    <span className="text-[9px] px-1 rounded bg-amber-400/20 text-amber-300 font-black">
+                      VIP BOOST
+                    </span>
+                  )}
+                </span>
+              );
+            })()}
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">

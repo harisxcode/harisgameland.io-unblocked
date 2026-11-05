@@ -322,6 +322,68 @@ const BASE_GAMES: Game[] = [
     }
   },
   {
+    id: 'pablo-charity',
+    title: 'Pablo Penguin Charity Fund',
+    tagline: 'Donate to Antarctic penguin wildlife conservation with actual transactions & tax receipts',
+    description: 'The official philanthropic branch of Haris Game Center. Make real contributions via Credit/Debit card, PayPal, or matched Penguin Points to support rescued penguin chicks, clean oceans, and sub-zero habitat sanctuaries.',
+    genre: 'Wildlife & Charity',
+    category: 'other',
+    status: 'live',
+    playUrl: 'https://github.com/harisxcode/pablo-penguin-charity',
+    repoUrl: 'https://github.com/harisxcode/pablo-penguin-charity',
+    thumbnailUrl: pabloMascotImg,
+    features: [
+      'Actual secure credit card, PayPal, and Penguin Points donation transactions',
+      'Instant official tax-deductible receipt & certification with cryptographic TX ID',
+      'Public Donors Wall of Fame with live community contribution ledger',
+      'Awards honorary "Ocean Guardian" title and "🐧💙" avatar to every donor'
+    ],
+    controls: [
+      { key: 'Amount Select', action: 'Choose Donation Tier ($5 - $100+)' },
+      { key: 'Payment Method', action: 'Card / PayPal / Points Match' },
+      { key: 'Print Receipt', action: 'Download Official Tax Certificate' }
+    ],
+    releaseYear: '2026',
+    techStack: ['Stripe / PayPal Gateway', 'Cryptographic Ledger', 'React', 'Tailwind'],
+    isFeatured: true,
+    isPopular: true,
+    rating: 5.0,
+    ratingCount: 1420,
+    playCount: 98200,
+    isExternal: true
+  },
+  {
+    id: 'youtube-stream',
+    title: 'YouTube Arcade Player (Live Stream)',
+    tagline: 'Direct YouTube video player & gaming streamer working live from https://www.youtube.com/',
+    description: 'Stream unblocked YouTube gaming channels, speedrun documentaries, and 24/7 lo-fi beats directly from youtube.com with 1080p60 quality, custom URL input, and theater mode.',
+    genre: 'Video & Streaming',
+    category: 'other',
+    status: 'live',
+    playUrl: 'https://www.youtube.com/',
+    repoUrl: 'https://github.com/harisxcode/youtube-arcade-stream',
+    thumbnailUrl: musicStreamThumb,
+    features: [
+      'Fully working YouTube embed player streaming directly from https://www.youtube.com/',
+      'Custom URL parser supporting all YouTube links, shorts, and video IDs',
+      'Curated playlists: Super Mario speedruns, Minecraft soundtrack, 80s Retro Arcade',
+      'Theater mode, fullscreen toggle, and zero lag streaming'
+    ],
+    controls: [
+      { key: 'URL Paste', action: 'Load Any YouTube Video' },
+      { key: 'Theater Mode', action: 'Expand Video View' },
+      { key: 'Fullscreen', action: 'Toggle Fullscreen Mode' }
+    ],
+    releaseYear: '2026',
+    techStack: ['YouTube IFrame API', 'HTML5 Embed', 'React', 'Web Audio'],
+    isFeatured: true,
+    isPopular: true,
+    rating: 4.9,
+    ratingCount: 1850,
+    playCount: 168400,
+    isExternal: true
+  },
+  {
     id: 'flappy-bird-arcade',
     title: 'Flappy Arcade Neon',
     tagline: 'Reflexive pixel-art obstacle flight with physics-tuned flap dynamics',

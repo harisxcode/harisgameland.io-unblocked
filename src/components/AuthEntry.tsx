@@ -12,9 +12,10 @@ import {
   Crown
 } from 'lucide-react';
 import { UserAccount } from '../types';
-import { getAllUsers, setActiveUser, createPlayerAccount, isOwnerAccount } from '../utils/auth';
+import { getAllUsers, setActiveUser, createPlayerAccount, isOwnerAccount, startFreeTrialAccount } from '../utils/auth';
 import pabloMascotImg from '../assets/images/retro_penguin_emoji_1793831650652.jpg';
 import { LegalModal, LegalTab } from './LegalModal';
+import { Clock } from 'lucide-react';
 
 interface AuthEntryProps {
   onLoginSuccess: (user: UserAccount) => void;
@@ -23,8 +24,9 @@ interface AuthEntryProps {
 const AVATAR_OPTIONS = ['🐧', '👑', '⚡', '🎮', '🚀', '🔥', '❄️', '🕶️'];
 
 export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [mode, setMode] = useState<'signin' | 'signup' | 'trial'>('signin');
   const [username, setUsername] = useState('');
+  const [trialName, setTrialName] = useState('');
   const [fullName, setFullName] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('🐧');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -32,6 +34,11 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
   const [legalTab, setLegalTab] = useState<LegalTab>('terms');
 
   const existingUsers = getAllUsers();
+
+  const handleStartTrial = () => {
+    const trialUser = startFreeTrialAccount(trialName.trim());
+    onLoginSuccess(trialUser);
+  };
 
   const handleSignIn = (userToLogin?: UserAccount) => {
     if (userToLogin) {
@@ -120,11 +127,11 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
           </p>
         </div>
 
-        {/* Tab Toggle */}
-        <div className="flex bg-slate-950/80 p-1 rounded-xl border border-slate-800 mb-6">
+        {/* Tab Toggle with 15-Min Free Trial Option */}
+        <div className="grid grid-cols-3 bg-slate-950/80 p-1 rounded-xl border border-slate-800 mb-6 gap-1">
           <button
             onClick={() => { setMode('signin'); setErrorMessage(null); }}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+            className={`py-2 text-[11px] sm:text-xs font-bold rounded-lg transition-all ${
               mode === 'signin'
                 ? 'bg-cyan-500 text-slate-950 shadow-md'
                 : 'text-slate-400 hover:text-white'
@@ -134,13 +141,24 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
           </button>
           <button
             onClick={() => { setMode('signup'); setErrorMessage(null); }}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+            className={`py-2 text-[11px] sm:text-xs font-bold rounded-lg transition-all ${
               mode === 'signup'
                 ? 'bg-cyan-500 text-slate-950 shadow-md'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Create Gamer Tag
+            New Account
+          </button>
+          <button
+            onClick={() => { setMode('trial'); setErrorMessage(null); }}
+            className={`py-2 text-[11px] sm:text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${
+              mode === 'trial'
+                ? 'bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 shadow-md'
+                : 'text-amber-400 hover:text-amber-300'
+            }`}
+          >
+            <Clock className="w-3 h-3" />
+            <span>15m Trial</span>
           </button>
         </div>
 
@@ -224,7 +242,7 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
               </div>
             )}
           </div>
-        ) : (
+        ) : mode === 'signup' ? (
           <form onSubmit={handleSignUp} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
@@ -270,19 +288,67 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-bold text-sm tracking-wide transition-all shadow-lg shadow-cyan-500/25 cursor-pointer"
             >
               <Sparkles className="w-4 h-4 fill-slate-950" />
-              <span>Register & Collect +100 Points</span>
+              <span>Create Account (Earn Tokens From 0)</span>
             </button>
           </form>
+        ) : (
+          /* 15-Minute Free Trial Form */
+          <div className="space-y-4">
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-1.5">
+              <div className="flex items-center gap-2 font-bold text-amber-300">
+                <Clock className="w-4 h-4 text-amber-400" />
+                <span>15-Minute Free VIP Trial</span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                Experience full VIP access with zero credit card required! Play all exclusive games and earn in-game tokens starting from 0. VIP games grant increased token rewards!
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Trial Gamer Tag (Optional)
+              </label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                <input
+                  type="text"
+                  value={trialName}
+                  onChange={(e) => setTrialName(e.target.value)}
+                  placeholder="e.g. TrialRacer77"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-950/70 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                  onKeyDown={(e) => e.key === 'Enter' && handleStartTrial()}
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={handleStartTrial}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:brightness-110 text-slate-950 font-black text-sm tracking-wide transition-all shadow-lg shadow-amber-500/25 cursor-pointer"
+            >
+              <Clock className="w-4 h-4" />
+              <span>Start 15-Minute Free VIP Trial</span>
+            </button>
+          </div>
         )}
 
         {/* Guest Access Fallback */}
         <div className="mt-5 pt-4 border-t border-slate-800/80 text-center space-y-3">
-          <button
-            onClick={handleQuickGuest}
-            className="text-xs text-slate-400 hover:text-cyan-300 transition-colors font-medium underline underline-offset-4 cursor-pointer"
-          >
-            Or Continue with Instant Guest Pass (1-Click)
-          </button>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={handleQuickGuest}
+              className="text-xs text-slate-400 hover:text-cyan-300 transition-colors font-medium underline underline-offset-4 cursor-pointer"
+            >
+              Instant Guest Pass (0 Tokens)
+            </button>
+            <span className="text-slate-600">•</span>
+            <button
+              onClick={handleStartTrial}
+              className="text-xs text-amber-400 hover:text-amber-300 transition-colors font-bold underline underline-offset-4 cursor-pointer flex items-center gap-1"
+            >
+              <Clock className="w-3 h-3" />
+              <span>15m VIP Trial</span>
+            </button>
+          </div>
 
           {/* Website Rules & Terms Notice */}
           <div className="p-3 rounded-2xl bg-slate-950/90 border border-cyan-500/30 text-left space-y-1.5">

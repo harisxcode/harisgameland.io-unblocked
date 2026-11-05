@@ -21,10 +21,11 @@ import {
   Gamepad2,
   Gem,
   Laptop,
-  Zap
+  Zap,
+  Clock
 } from 'lucide-react';
 import { UserAccount } from '../types';
-import { isOwnerAccount } from '../utils/auth';
+import { isOwnerAccount, getTrialRemainingSeconds } from '../utils/auth';
 import { Game } from '../data/games';
 import pabloMascotImg from '../assets/images/retro_penguin_emoji_1793831650652.jpg';
 import { LegalTab } from './LegalModal';
@@ -54,6 +55,8 @@ interface NavbarProps {
   onOpenSeasonPass?: () => void;
   onOpenDailySpin?: () => void;
   onOpenLocker?: () => void;
+  onOpenCharityModal?: () => void;
+  onOpenYouTubeModal?: () => void;
 }
 
 export function Navbar({ 
@@ -79,7 +82,9 @@ export function Navbar({
   isChromebookTurbo = true,
   onOpenSeasonPass,
   onOpenDailySpin,
-  onOpenLocker
+  onOpenLocker,
+  onOpenCharityModal,
+  onOpenYouTubeModal
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
@@ -319,6 +324,30 @@ export function Navbar({
             </button>
           )}
 
+          {/* Pablo Penguin Charity Quick Button */}
+          {onOpenCharityModal && (
+            <button
+              onClick={onOpenCharityModal}
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-950/80 to-teal-950/80 border border-emerald-500/40 text-emerald-300 hover:text-white hover:border-emerald-400 transition-all text-xs font-bold shadow-sm shadow-emerald-950/40 cursor-pointer"
+              title="Pablo Penguin Wildlife Charity - Real Donations & Tax Receipts"
+            >
+              <Heart className="w-3.5 h-3.5 fill-emerald-400 text-emerald-400" />
+              <span>Donate</span>
+            </button>
+          )}
+
+          {/* YouTube Arcade Stream Quick Button */}
+          {onOpenYouTubeModal && (
+            <button
+              onClick={onOpenYouTubeModal}
+              className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-red-950/80 to-rose-950/80 border border-red-500/40 text-red-300 hover:text-white hover:border-red-400 transition-all text-xs font-bold shadow-sm shadow-red-950/40 cursor-pointer"
+              title="YouTube Arcade Stream - Works directly from https://www.youtube.com/"
+            >
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+              <span>YouTube</span>
+            </button>
+          )}
+
           {/* Pablo Hub shortcut button */}
           <button
             onClick={onOpenPabloHub}
@@ -371,15 +400,26 @@ export function Navbar({
           {/* Player status & Points */}
           {currentUser && (
             <div className="flex items-center gap-1.5 sm:gap-2">
-              {/* Penguin Points badge */}
+              {/* Penguin Points / Tokens badge */}
               <div 
                 onClick={onOpenPabloHub}
                 className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold cursor-pointer hover:bg-amber-500/20 transition-colors"
-                title="Your Penguin Points balance. Click to feed Pablo or unlock VIP!"
+                title="Your in-game tokens balance (Earned starting from 0 by playing games!)"
               >
                 <Coins className="w-3.5 h-3.5 text-amber-400" />
-                <span>{points} pts</span>
+                <span>{points} Tokens</span>
               </div>
+
+              {/* 15-Minute Free Trial Countdown Pill */}
+              {currentUser.isTrial && (
+                <div 
+                  className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400/60 text-amber-300 text-xs font-mono font-bold shadow-sm"
+                  title="15-Minute Free Trial active! All games & regular VIP unlocked."
+                >
+                  <Clock className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                  <span>15m VIP Trial</span>
+                </div>
+              )}
 
               {/* Interactive VIP Button at Top of Screen (Regular, Gold, Diamond) */}
               <button

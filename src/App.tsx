@@ -39,9 +39,11 @@ import { SeasonPassModal } from './components/SeasonPassModal';
 import { DailySpinModal } from './components/DailySpinModal';
 import { PlayerLockerModal } from './components/PlayerLockerModal';
 
+import { PabloCharityModal } from './components/PabloCharityModal';
+import { YouTubePlayerModal } from './components/YouTubePlayerModal';
 import { INITIAL_GAMES, Game, UNIVERSAL_CATEGORIES } from './data/games';
 import { UserAccount } from './types';
-import { getActiveUser, setActiveUser, awardPenguinPoints, hasVipTierAccess, isOwnerAccount } from './utils/auth';
+import { getActiveUser, setActiveUser, awardPenguinPoints, hasVipTierAccess, isOwnerAccount, calculateGameTokenReward, getTrialRemainingSeconds } from './utils/auth';
 import { awardSeasonXp, recordQuestAction, ensureUserProgression, ARCADE_BORDER_THEMES } from './utils/seasonPass';
 
 import { 
@@ -79,6 +81,8 @@ export default function App() {
   const [isSeasonPassOpen, setIsSeasonPassOpen] = useState(false);
   const [isDailySpinOpen, setIsDailySpinOpen] = useState(false);
   const [isLockerOpen, setIsLockerOpen] = useState(false);
+  const [isCharityModalOpen, setIsCharityModalOpen] = useState(false);
+  const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
   const [targetVipGame, setTargetVipGame] = useState<Game | null>(null);
   const [isStealthActive, setIsStealthActive] = useState(false);
   const [snowEnabled, setSnowEnabled] = useState(true);
@@ -272,12 +276,23 @@ export default function App() {
       return;
     }
 
+    if (game.id === 'pablo-charity') {
+      setIsCharityModalOpen(true);
+      return;
+    }
+
+    if (game.id === 'youtube-stream') {
+      setIsYouTubeModalOpen(true);
+      return;
+    }
+
     setSelectedGame(game);
   };
 
-  // Award points on game play & track Season Pass progression
+  // Award tokens on game play (VIP games award more tokens!) & track Season Pass progression
   const handleGamePlayedSession = (game: Game) => {
-    let updated = awardPenguinPoints(25);
+    const { totalTokens } = calculateGameTokenReward(game, currentUser);
+    let updated = awardPenguinPoints(totalTokens);
     if (updated) {
       try {
         awardSeasonXp(50, `Played ${game.title}`);
@@ -450,6 +465,8 @@ export default function App() {
           onOpenSeasonPass={() => setIsSeasonPassOpen(true)}
           onOpenDailySpin={() => setIsDailySpinOpen(true)}
           onOpenLocker={() => setIsLockerOpen(true)}
+          onOpenCharityModal={() => setIsCharityModalOpen(true)}
+          onOpenYouTubeModal={() => setIsYouTubeModalOpen(true)}
         />
 
         <main className="flex-1">
@@ -460,7 +477,7 @@ export default function App() {
           onOpenPabloHub={() => setIsPabloHubOpen(true)}
           onOpenRatingModal={() => setIsRatingModalOpen(true)}
           onOpenDiscord={() => setIsDiscordModalOpen(true)}
-          onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
+          onOpenAdminPanel={isOwnerAccount(currentUser) ? () => setIsAdminPanelOpen(true) : undefined}
           onOpenSidebar={() => setIsSidebarOpen(true)}
           onOpenSeasonPass={() => setIsSeasonPassOpen(true)}
           onOpenDailySpin={() => setIsDailySpinOpen(true)}
@@ -860,7 +877,11 @@ export default function App() {
         />
 
         {/* Developer Hub Section */}
-        <DeveloperHub onOpenAddModal={() => setIsAddModalOpen(true)} />
+        <DeveloperHub 
+          onOpenAddModal={() => setIsAddModalOpen(true)}
+          onOpenCharityModal={() => setIsCharityModalOpen(true)}
+          onOpenYouTubeModal={() => setIsYouTubeModalOpen(true)}
+        />
       </main>
 
       {/* Floating Pablo Mascot (Bottom Right) */}
@@ -1020,6 +1041,8 @@ export default function App() {
         onOpenSeasonPass={() => setIsSeasonPassOpen(true)}
         onOpenDailySpin={() => setIsDailySpinOpen(true)}
         onOpenLocker={() => setIsLockerOpen(true)}
+        onOpenCharityModal={() => setIsCharityModalOpen(true)}
+        onOpenYouTubeModal={() => setIsYouTubeModalOpen(true)}
         onOpenVipModal={() => {
           setTargetVipGame(null);
           setIsVipModalOpen(true);
@@ -1085,6 +1108,20 @@ export default function App() {
           setIsLockerOpen(false);
           setIsSeasonPassOpen(true);
         }}
+      />
+
+      {/* Pablo Penguin Charity Live Donation Repository Modal */}
+      <PabloCharityModal
+        isOpen={isCharityModalOpen}
+        onClose={() => setIsCharityModalOpen(false)}
+        currentUser={currentUser}
+        onUserUpdated={(u) => setCurrentUser(u)}
+      />
+
+      {/* YouTube Player & Streaming Repository Modal */}
+      <YouTubePlayerModal
+        isOpen={isYouTubeModalOpen}
+        onClose={() => setIsYouTubeModalOpen(false)}
       />
     </div>
   );

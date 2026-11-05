@@ -63,6 +63,8 @@ interface SidebarMenuProps {
   onOpenDailySpin?: () => void;
   onOpenLocker?: () => void;
   onOpenVipModal?: () => void;
+  onOpenCharityModal?: () => void;
+  onOpenYouTubeModal?: () => void;
 }
 
 export function SidebarMenu({
@@ -85,7 +87,9 @@ export function SidebarMenu({
   onOpenSeasonPass,
   onOpenDailySpin,
   onOpenLocker,
-  onOpenVipModal
+  onOpenVipModal,
+  onOpenCharityModal,
+  onOpenYouTubeModal
 }: SidebarMenuProps) {
   const isOwner = isOwnerAccount(currentUser);
   const tierInfo = currentUser ? calculateTier(currentUser.seasonPassXp || 0) : null;
@@ -207,8 +211,13 @@ export function SidebarMenu({
                         </span>
                       )}
                     </div>
-                    <div className="text-[10px] text-slate-400 font-mono">
-                      {isOwner ? 'harisxcode@gmail.com' : `${currentUser.penguinPoints} Penguin Points`}
+                    <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1.5">
+                      <span>{isOwner ? 'harisxcode@gmail.com' : `${currentUser.penguinPoints} In-Game Tokens`}</span>
+                      {currentUser.isTrial && (
+                        <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40 text-[9px] font-bold">
+                          15m Trial
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -334,6 +343,64 @@ export function SidebarMenu({
                   </div>
                   <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 font-mono text-[10px] uppercase">
                     Equip
+                  </span>
+                </button>
+              )}
+
+              {/* Pablo Penguin Charity Repository Button */}
+              {onOpenCharityModal && (
+                <button
+                  onClick={() => {
+                    playArcadeSfx('click');
+                    onOpenCharityModal();
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/30 hover:border-emerald-400/60 flex items-center justify-between text-left transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">🐧💙</span>
+                    <div>
+                      <div className="font-bold text-xs text-emerald-300 group-hover:text-emerald-200 transition-colors flex items-center gap-1.5">
+                        <span>Pablo Charity</span>
+                        <span className="px-1.5 py-0.2 rounded text-[8px] bg-emerald-500/20 text-emerald-300 font-mono font-bold">
+                          REAL TX
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono">
+                        Wildlife Fund &amp; Tax Receipts
+                      </div>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-mono text-[10px] uppercase font-bold">
+                    Donate
+                  </span>
+                </button>
+              )}
+
+              {/* YouTube Player & Streaming Repository Button */}
+              {onOpenYouTubeModal && (
+                <button
+                  onClick={() => {
+                    playArcadeSfx('click');
+                    onOpenYouTubeModal();
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/50 border border-red-500/30 hover:border-red-400/60 flex items-center justify-between text-left transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">📺</span>
+                    <div>
+                      <div className="font-bold text-xs text-red-300 group-hover:text-red-200 transition-colors flex items-center gap-1.5">
+                        <span>YouTube Stream</span>
+                        <span className="px-1.5 py-0.2 rounded text-[8px] bg-red-500/20 text-red-300 font-mono font-bold">
+                          LIVE
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono">
+                        Unblocked 1080p60 Video Hub
+                      </div>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-md bg-red-500/20 text-red-300 font-mono text-[10px] uppercase font-bold">
+                    Watch
                   </span>
                 </button>
               )}
@@ -591,45 +658,47 @@ export function SidebarMenu({
           </div>
 
           {/* ========================================================
-              OWNER ADMIN PANEL SECTION (HARIS EXCLUSIVE)
+              OWNER ADMIN PANEL SECTION (HARIS EXCLUSIVE - ONLY OWNER)
              ======================================================== */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs font-mono uppercase tracking-wider text-amber-400 font-bold px-1">
-              <span className="flex items-center gap-1.5">
-                <Crown className="w-3.5 h-3.5 fill-amber-400" />
-                <span>Owner Portal</span>
-              </span>
-              <span className="text-[9px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40 font-bold">
-                HARIS ONLY
-              </span>
-            </div>
-
-            {/* Primary Admin Panel Button */}
-            <button
-              onClick={() => {
-                playArcadeSfx('click');
-                onOpenAdminPanel();
-              }}
-              className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:brightness-110 text-slate-950 font-black text-xs tracking-wide shadow-xl shadow-amber-500/25 transition-all transform active:scale-98 flex items-center justify-between cursor-pointer group"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-slate-950 text-amber-400 flex items-center justify-center shadow-md">
-                  <BarChart3 className="w-4 h-4" />
-                </div>
-                <div className="text-left">
-                  <div className="font-display font-black text-slate-950 text-xs flex items-center gap-1.5">
-                    <span>Owner Admin Panel</span>
-                    <span className="text-[9px] bg-slate-950 text-amber-300 px-1 py-0.2 rounded font-mono">LIVE</span>
-                  </div>
-                  <div className="text-[10px] text-slate-900/80 font-mono font-medium">
-                    Player Counts &amp; Graphs
-                  </div>
-                </div>
+          {isOwner && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs font-mono uppercase tracking-wider text-amber-400 font-bold px-1">
+                <span className="flex items-center gap-1.5">
+                  <Crown className="w-3.5 h-3.5 fill-amber-400" />
+                  <span>Owner Portal</span>
+                </span>
+                <span className="text-[9px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40 font-bold">
+                  HARIS ONLY
+                </span>
               </div>
 
-              <ArrowRight className="w-4 h-4 text-slate-950 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
+              {/* Primary Admin Panel Button */}
+              <button
+                onClick={() => {
+                  playArcadeSfx('click');
+                  onOpenAdminPanel();
+                }}
+                className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:brightness-110 text-slate-950 font-black text-xs tracking-wide shadow-xl shadow-amber-500/25 transition-all transform active:scale-98 flex items-center justify-between cursor-pointer group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-slate-950 text-amber-400 flex items-center justify-center shadow-md">
+                    <BarChart3 className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-display font-black text-slate-950 text-xs flex items-center gap-1.5">
+                      <span>Owner Admin Panel</span>
+                      <span className="text-[9px] bg-slate-950 text-amber-300 px-1 py-0.2 rounded font-mono">LIVE</span>
+                    </div>
+                    <div className="text-[10px] text-slate-900/80 font-mono font-medium">
+                      Player Counts &amp; Graphs
+                    </div>
+                  </div>
+                </div>
+
+                <ArrowRight className="w-4 h-4 text-slate-950 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+          )}
 
           {/* ========================================================
               TERMS & POLICIES SECTION (ON THE SIDEBAR)

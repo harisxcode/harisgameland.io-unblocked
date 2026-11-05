@@ -222,15 +222,15 @@ const DEFAULT_ACCOUNTS: UserAccount[] = [
     activeTitle: 'Guest Challenger',
     unlockedTitles: ['Guest Challenger'],
     unlockedAvatars: ['🐧'],
-    penguinPoints: 120,
+    penguinPoints: 0,
     isVip: false,
     vipTier: 'none',
     createdAt: new Date().toISOString(),
     lastLogin: new Date().toISOString(),
-    gamesPlayedCount: 3,
+    gamesPlayedCount: 0,
     favoriteGameIds: ['escape-road', 'nitro-league'],
-    snacksFedCount: 1,
-    pabloAffection: 25,
+    snacksFedCount: 0,
+    pabloAffection: 15,
     inventory: []
   },
   {
@@ -242,7 +242,7 @@ const DEFAULT_ACCOUNTS: UserAccount[] = [
     activeTitle: 'Golden Legend',
     unlockedTitles: ['Golden Legend', "Pablo's Champion", 'VIP Grinder'],
     unlockedAvatars: ['👑', '⭐', '🐧'],
-    penguinPoints: 850,
+    penguinPoints: 0,
     isVip: true,
     vipTier: 'gold',
     vipActivatedAt: new Date().toISOString(),
@@ -257,20 +257,14 @@ const DEFAULT_ACCOUNTS: UserAccount[] = [
 ];
 
 export function isOwnerAccount(user: UserAccount | null): boolean {
-  if (!user) return true;
-  if (user.isAdmin) return true;
+  if (!user) return false;
   const username = user.username?.toLowerCase().trim();
   const email = user.email?.toLowerCase().trim();
-  if (
+  return (
     email === 'harisxcode@gmail.com' ||
     username === 'haris' ||
-    username === 'harisxcode' ||
-    username === 'owner' ||
-    username === 'admin'
-  ) {
-    return true;
-  }
-  return true;
+    username === 'harisxcode'
+  );
 }
 
 const TIER_HIERARCHY: Record<VipTierLevel, number> = {
@@ -370,7 +364,7 @@ export function createPlayerAccount(
       ? ['Diamond Overlord', 'Emperor of Ice', 'Golden Legend', 'VIP Grinder']
       : ['Arcade Challenger'],
     unlockedAvatars: isHaris ? ['👑', '💎', '🐧'] : [avatar],
-    penguinPoints: isHaris ? 9999 : 100,
+    penguinPoints: isHaris ? 9999 : 0, // Starts from ZERO tokens for each player account
     isVip: isHaris,
     vipTier: isHaris ? 'diamond' : 'none',
     isAdmin: isHaris,
@@ -390,17 +384,106 @@ export function createPlayerAccount(
   return newUser;
 }
 
+/**
+ * Creates or activates a 15-Minute Free Trial account.
+ * Gives full temporary VIP access (regular VIP tier) for 15 minutes,
+ * starting with 0 tokens so they earn from zero.
+ */
+export function startFreeTrialAccount(gamerTag?: string): UserAccount {
+  const trialId = `trial-${Date.now()}`;
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 15 * 60 * 1000); // exactly 15 minutes from now
+
+  const name = gamerTag?.trim() || `TrialRunner-${Math.floor(100 + Math.random() * 900)}`;
+
+  const trialUser: UserAccount = {
+    id: trialId,
+    username: name,
+    fullName: `${name} (15m Free Trial)`,
+    email: `${name.toLowerCase()}@trial.arcade`,
+    avatar: '⏱️',
+    activeTitle: '15m VIP Trialist',
+    unlockedTitles: ['15m VIP Trialist', 'Speedy Tester'],
+    unlockedAvatars: ['⏱️', '⚡', '🐧'],
+    penguinPoints: 0, // Starts from ZERO tokens
+    isVip: true, // Temporary VIP during trial
+    vipTier: 'regular',
+    isAdmin: false, // Absolutely NO admin panel access
+    isTrial: true,
+    trialStartedAt: now.toISOString(),
+    trialExpiresAt: expiresAt.toISOString(),
+    createdAt: now.toISOString(),
+    lastLogin: now.toISOString(),
+    gamesPlayedCount: 0,
+    favoriteGameIds: [],
+    snacksFedCount: 0,
+    pabloAffection: 20,
+    inventory: []
+  };
+
+  const users = getAllUsers();
+  users.push(trialUser);
+  saveUsers(users);
+  setActiveUser(trialUser);
+  return trialUser;
+}
+
+/**
+ * Checks if the user is currently on an active trial, and returns remaining seconds
+ */
+export function getTrialRemainingSeconds(user: UserAccount | null): number {
+  if (!user || !user.isTrial || !user.trialExpiresAt) return 0;
+  const expires = new Date(user.trialExpiresAt).getTime();
+  const diff = Math.floor((expires - Date.now()) / 1000);
+  return Math.max(0, diff);
+}
+
+/**
+ * Calculate token rewards for playing games:
+ * VIP games award more tokens (e.g. 50-75 tokens vs 25 standard),
+ * plus player tier multiplier (Gold 1.5x, Diamond 2.0x).
+ */
+export function calculateGameTokenReward(game?: { isVipExclusive?: boolean; vipTierRequired?: string } | null, user?: UserAccount | null): {
+  baseAmount: number;
+  vipBonus: number;
+  tierMultiplier: number;
+  totalTokens: number;
+} {
+  // Base token reward: standard games give 25 tokens. VIP games give out more tokens (50-75).
+  let baseAmount = 25;
+  let vipBonus = 0;
+
+  if (game?.isVipExclusive) {
+    if (game.vipTierRequired === 'diamond') {
+      vipBonus = 50; // Total base: 75
+    } else if (game.vipTierRequired === 'gold') {
+      vipBonus = 35; // Total base: 60
+    } else {
+      vipBonus = 25; // Total base: 50
+    }
+  }
+
+  const rawBase = baseAmount + vipBonus;
+
+  let tierMultiplier = 1;
+  if (user?.vipTier === 'gold') tierMultiplier = 1.5;
+  if (user?.vipTier === 'diamond') tierMultiplier = 2.0;
+
+  const totalTokens = Math.round(rawBase * tierMultiplier);
+
+  return {
+    baseAmount,
+    vipBonus,
+    tierMultiplier,
+    totalTokens
+  };
+}
+
 export function awardPenguinPoints(amount: number = 25): UserAccount | null {
   const user = getActiveUser();
   if (!user) return null;
 
-  // Tier multiplier
-  let multiplier = 1;
-  if (user.vipTier === 'gold') multiplier = 1.5;
-  if (user.vipTier === 'diamond') multiplier = 2.0;
-
-  const earned = Math.round(amount * multiplier);
-  user.penguinPoints = (user.penguinPoints || 0) + earned;
+  user.penguinPoints = (user.penguinPoints || 0) + amount;
   user.gamesPlayedCount = (user.gamesPlayedCount || 0) + 1;
   setActiveUser(user);
   return user;
