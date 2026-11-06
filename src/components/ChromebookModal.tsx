@@ -235,15 +235,38 @@ export const ChromebookModal: React.FC<ChromebookModalProps> = ({
             </div>
 
             <button
-              onClick={() => {
+              onClick={async () => {
                 setIsDownloading(true);
                 playArcadeSfx('launch');
-                const link = document.createElement('a');
-                link.href = '/haris_gamecenter_offline.html';
-                link.download = 'haris_gamecenter_offline.html';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                try {
+                  const resp = await fetch('/haris_gamecenter_offline.html');
+                  if (resp.ok) {
+                    const text = await resp.text();
+                    const blob = new Blob([text], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'haris_gamecenter_offline.html';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                  } else {
+                    const link = document.createElement('a');
+                    link.href = '/haris_gamecenter_offline.html';
+                    link.download = 'haris_gamecenter_offline.html';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }
+                } catch {
+                  const link = document.createElement('a');
+                  link.href = '/haris_gamecenter_offline.html';
+                  link.download = 'haris_gamecenter_offline.html';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }
                 setTimeout(() => setIsDownloading(false), 2500);
               }}
               className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 hover:brightness-110 text-slate-950 font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-500/25 cursor-pointer shrink-0 flex items-center gap-1.5"

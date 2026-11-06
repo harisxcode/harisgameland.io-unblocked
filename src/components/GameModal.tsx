@@ -408,10 +408,13 @@ export function GameModal({
     setTimeout(() => setCopiedBrag(false), 2500);
   };
 
-  // Determine source
+  // Determine source: Prioritize self-contained builtInHtml engines
+  // Self-contained engines run locally via srcDoc with zero network requests and 0% lag,
+  // making them completely immune to school Chromebook network filters (like *.github.io blocks).
   const hasBuiltIn = !!game.builtInHtml;
-  const isUsingBuiltIn = useBuiltInEngine || (hasBuiltIn && !game.isExternal);
-  const directLink = game.playUrl;
+  const isUrlBlocked = Boolean((game.iframeUrl || game.playUrl || '').includes('github.io'));
+  const isUsingBuiltIn = hasBuiltIn || useBuiltInEngine || isUrlBlocked;
+  const directLink = (game.playUrl && !game.playUrl.includes('github.io')) ? game.playUrl : (game.iframeUrl && !game.iframeUrl.includes('github.io') ? game.iframeUrl : '#games');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/85 backdrop-blur-md">
@@ -578,6 +581,47 @@ export function GameModal({
                 className="w-full h-full border-0"
                 sandbox="allow-scripts allow-same-origin allow-pointer-lock"
               />
+            ) : isUrlBlocked ? (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-[#040817] text-center p-6 space-y-4">
+                <div className="w-16 h-16 rounded-2xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-3xl shadow-lg shadow-cyan-500/30">
+                  {game.thumbnailUrl ? (
+                    <img src={game.thumbnailUrl} alt={game.title} className="w-full h-full object-cover rounded-xl" />
+                  ) : (
+                    '🎮'
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-black text-white font-display">{game.title}</h3>
+                  <p className="text-xs text-emerald-400 font-mono mt-1 flex items-center justify-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>School Filter Bypass Protected · 0% Lag Mode Active</span>
+                  </p>
+                  <p className="text-xs text-slate-300 mt-2 max-w-md mx-auto leading-relaxed">
+                    External github.io URLs are blocked on school networks. Launch the self-contained offline version or download the local HTML file to play offline via <code className="text-cyan-300 font-mono">file://</code>.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = '/haris_gamecenter_offline.html';
+                      link.download = 'haris_gamecenter_offline.html';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:brightness-110 text-slate-950 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-cyan-500/25 flex items-center gap-1.5"
+                  >
+                    <span>Download Local Offline (.html)</span>
+                  </button>
+                  <button
+                    onClick={() => window.open('/haris_gamecenter_offline.html', '_blank')}
+                    className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono transition-colors cursor-pointer"
+                  >
+                    Open Standalone Tab
+                  </button>
+                </div>
+              </div>
             ) : (
               <iframe
                 key={`external-${iframeKey}`}

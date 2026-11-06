@@ -83,8 +83,8 @@ export function AddGameModal({ isOpen, onClose, onAddGame }: AddGameModalProps) 
   genre: '${getGenreForCategory(category)}',
   category: '${category}',
   status: '${playUrl ? 'live' : 'upcoming'}',
-  playUrl: '${playUrl || 'https://harisxcode.github.io/my-new-game/'}',
-  repoUrl: '${repoUrl || 'https://github.com/harisxcode/my-new-game'}',
+  playUrl: '${playUrl || 'https://haris-arcade.local/my-new-game/'}',
+  repoUrl: '${repoUrl || 'https://git.harisgamecenter.com/harisxcode/my-new-game'}',
   thumbnailUrl: '${thumbnailUrl || '/src/assets/images/hero_gaming_center_1791725017457.jpg'}',
   directPlayOnly: ${directPlayOnly},
   features: ['Zero-install browser play', 'Full 60fps loop'],
@@ -192,7 +192,7 @@ export function AddGameModal({ isOpen, onClose, onAddGame }: AddGameModalProps) 
                 required
                 value={playUrl}
                 onChange={(e) => setPlayUrl(e.target.value)}
-                placeholder="https://harisxcode.github.io/game/ or now.gg"
+                placeholder="https://haris-arcade.local/game/ or now.gg"
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
               />
             </div>

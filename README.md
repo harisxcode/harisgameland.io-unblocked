@@ -4,13 +4,14 @@ Interactive landing hub for Haris's arcade and racing web games, featuring **Nit
 
 ## 🚀 Published Games & Concepts
 
-- **Nitro League**: [Play Game](https://harisxcode.github.io/nitro-league/) · [GitHub Repo](https://github.com/harisxcode/nitro-league)
+- **Nitro League 3D**: [Play Game](https://haris-arcade.local/#nitro-league) · [Repository](https://git.harisgamecenter.com/haris-arcade/nitro-league)
 - **Escape Road**: [Direct Play](https://unblockedescaperoads.com/) · 3D Police Getaway Chase
-- **Haris Game Center (Arcade Portal)**: [Direct Play](https://harisxcode.github.io/haris-game-center/#games) · [GitHub Repo](https://github.com/harisxcode/haris-game-center)
+- **Haris Game Center (Arcade Portal)**: [Direct Play](https://haris-arcade.local/#games) · [Repository](https://git.harisgamecenter.com/haris-arcade/haris-game-center)
 - **Roblox (Cloud Edition)**: [Direct Play on now.gg](https://now.gg/apps/a/19900/b.html)
-- **Flappy Bird Arcade**: [Play Game](https://harisxcode.github.io/flappy-bird-arcade/) · [GitHub Repo](https://github.com/harisxcode/flappy-bird-arcade)
-- **Meme Mania**: [Play Game](https://harisxcode.github.io/meme-mania/) · [GitHub Repo](https://github.com/harisxcode/meme-mania)
+- **Flappy Bird Arcade**: [Play Game](https://haris-arcade.local/#flappy-bird) · [Repository](https://git.harisgamecenter.com/haris-arcade/flappy-bird)
+- **Meme Mania**: [Play Game](https://haris-arcade.local/#meme-mania) · [Repository](https://git.harisgamecenter.com/haris-arcade/meme-mania)
 - **Music Stream** (`other` category): [Direct Launch](https://is.gd/musicstream) · High-energy web audio & playlist stream concept
+- **Self-Contained Local Offline File**: `haris_gamecenter_offline.html` (Run locally via `file://` with zero network requests)
 
 ---
 

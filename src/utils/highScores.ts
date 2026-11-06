@@ -208,5 +208,5 @@ export function generateBragText(
   scoreText: string,
   playerTag: string
 ): string {
-  return `🎮 [Haris Game Center - High Score Brag!]\n🏆 Just crushed a NEW ALL-TIME RECORD on ${gameTitle}!\n⭐ Score: ${scoreText}\n👤 Gamer: ${playerTag}\n🕹️ Think you can beat my run? Play unblocked now with 0% lag: https://harisxcode.github.io\n#GameGrinders #HarisGameCenter #UnblockedGames`;
+  return `🎮 [Haris Game Center - High Score Brag!]\n🏆 Just crushed a NEW ALL-TIME RECORD on ${gameTitle}!\n⭐ Score: ${scoreText}\n👤 Gamer: ${playerTag}\n🕹️ Think you can beat my run? Play unblocked now with 0% lag: https://harisgamecenter.com\n#GameGrinders #HarisGameCenter #UnblockedGames`;
 }
