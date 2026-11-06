@@ -82,6 +82,33 @@ export function OwnerAdminPanelModal({
 
   const isOwner = isOwnerAccount(currentUser);
 
+  if (!isOwner) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-fadeIn">
+        <div className="relative w-full max-w-md bg-[#0a1128] border-2 border-rose-500/60 rounded-3xl p-6 shadow-2xl text-center space-y-4 text-slate-100">
+          <div className="w-16 h-16 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-400 mx-auto flex items-center justify-center shadow-lg shadow-rose-500/20">
+            <ShieldCheck className="w-8 h-8 text-rose-400" />
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-mono font-bold">
+            <span>⛔ OWNER ACCESS ONLY</span>
+          </div>
+          <h3 className="text-xl font-black text-white font-display">
+            Access Restricted to Haris
+          </h3>
+          <p className="text-xs text-slate-300 leading-relaxed">
+            The Executive Admin Panel contains proprietary telemetry, server health metrics, and game controls restricted exclusively to <strong>Haris</strong> (<span className="text-amber-300 font-mono">harisxcode@gmail.com</span>). Non-admin accounts cannot access this panel.
+          </p>
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 hover:brightness-110 text-slate-950 font-black text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-rose-500/20"
+          >
+            Close &amp; Return to Games
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const handleSimulateRush = () => {
     setIsRefreshing(true);
     playArcadeSfx('click');

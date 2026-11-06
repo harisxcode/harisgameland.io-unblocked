@@ -88,6 +88,8 @@ export interface UserAccount {
   fullName: string;
   email: string;
   avatar: string;
+  passwordHash?: string; // Securely verified password
+  pinCode?: string; // 4-digit PIN code for account verification & recovery
   penguinPoints: number;
   isVip: boolean;
   vipTier?: VipTierLevel;

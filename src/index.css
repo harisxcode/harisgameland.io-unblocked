@@ -79,3 +79,20 @@
   contain: layout style paint;
 }
 
+/* ========================================================
+   SINGLE-SCREEN CHROMEBOOK MODE (100vh · OVERFLOW HIDDEN)
+   Fits neatly on one screen without triggering scrollbars
+   ======================================================== */
+.single-screen-mode {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+}
+
+.single-screen-mode main {
+  height: calc(100vh - 4rem) !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+}
+
+

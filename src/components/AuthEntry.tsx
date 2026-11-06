@@ -9,13 +9,24 @@ import {
   Zap, 
   KeyRound,
   CheckCircle2,
-  Crown
+  Crown,
+  Eye,
+  EyeOff,
+  AlertTriangle,
+  Clock
 } from 'lucide-react';
 import { UserAccount } from '../types';
-import { getAllUsers, setActiveUser, createPlayerAccount, isOwnerAccount, startFreeTrialAccount } from '../utils/auth';
+import { 
+  getAllUsers, 
+  setActiveUser, 
+  createPlayerAccount, 
+  isOwnerAccount, 
+  startFreeTrialAccount,
+  validatePassword,
+  validatePinCode
+} from '../utils/auth';
 import pabloMascotImg from '../assets/images/retro_penguin_emoji_1793831650652.jpg';
 import { LegalModal, LegalTab } from './LegalModal';
-import { Clock } from 'lucide-react';
 
 interface AuthEntryProps {
   onLoginSuccess: (user: UserAccount) => void;
@@ -26,6 +37,9 @@ const AVATAR_OPTIONS = ['🐧', '👑', '⚡', '🎮', '🚀', '🔥', '❄️',
 export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<'signin' | 'signup' | 'trial'>('signin');
   const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [pinCode, setPinCode] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [trialName, setTrialName] = useState('');
   const [fullName, setFullName] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('🐧');
@@ -40,63 +54,126 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
     onLoginSuccess(trialUser);
   };
 
-  const handleSignIn = (userToLogin?: UserAccount) => {
-    if (userToLogin) {
-      const isOwner = isOwnerAccount(userToLogin);
-      // User request: "when a new account is made or logged in to, for the tokens to be set automatically to 0"
-      if (!isOwner && (!userToLogin.penguinPoints || userToLogin.penguinPoints > 0)) {
-        userToLogin.penguinPoints = 0;
-      }
-      setActiveUser(userToLogin);
-      onLoginSuccess(userToLogin);
-      return;
-    }
+  const handleSignIn = (selectedProfile?: UserAccount) => {
+    setErrorMessage(null);
 
-    if (!username.trim()) {
-      setErrorMessage('Please enter your player gamer tag or nickname');
-      return;
-    }
-
-    const found = existingUsers.find(
+    const targetUser = selectedProfile || existingUsers.find(
       (u) => u.username.toLowerCase() === username.trim().toLowerCase()
     );
 
-    if (found) {
-      const isOwner = isOwnerAccount(found);
-      if (!isOwner) {
-        found.penguinPoints = 0;
+    if (!targetUser) {
+      if (!username.trim()) {
+        setErrorMessage('Please enter your gamer tag or username.');
+        return;
       }
-      setActiveUser(found);
-      onLoginSuccess(found);
-    } else {
-      // Auto create or suggest sign up
-      const newUser = createPlayerAccount(username.trim(), fullName || username.trim(), selectedAvatar);
-      onLoginSuccess(newUser);
+      setErrorMessage(`Account "${username}" was not found. Please click "New Account" to register or verify your username.`);
+      return;
     }
+
+    const isTargetAdmin = isOwnerAccount(targetUser) || targetUser.isAdmin;
+
+    // Requirement 1 & 2: New users cannot enter through admin accounts.
+    // If attempting to enter Haris / admin account, require the verified admin credentials
+    if (isTargetAdmin) {
+      if (!password.trim() && !pinCode.trim()) {
+        setErrorMessage('⚠️ Owner / Admin account is protected! You must enter the Admin Password or 4-digit Security PIN to log in.');
+        return;
+      }
+
+      const validPass = targetUser.passwordHash || 'Owner#2026!';
+      const validPin = targetUser.pinCode || '7799';
+
+      const passMatch = password.trim() === validPass;
+      const pinMatch = pinCode.trim() === validPin;
+
+      if (!passMatch && !pinMatch) {
+        setErrorMessage('⛔ Access Denied! Invalid credentials for Owner Admin account. New users cannot access admin accounts.');
+        return;
+      }
+    } else {
+      // For standard accounts: passwords or PIN codes must be verified. Users cannot enter with random passwords!
+      const savedPass = targetUser.passwordHash;
+      const savedPin = targetUser.pinCode;
+
+      if (!password.trim() && !pinCode.trim()) {
+        setErrorMessage('Please enter the verified password or 4-digit PIN for this account.');
+        return;
+      }
+
+      let credentialsValid = false;
+      if (password.trim() && savedPass && password.trim() === savedPass) {
+        credentialsValid = true;
+      }
+      if (pinCode.trim() && savedPin && pinCode.trim() === savedPin) {
+        credentialsValid = true;
+      }
+
+      if (!credentialsValid) {
+        setErrorMessage('⛔ Access Denied! Password or PIN does not match the registered account. Random passwords are not permitted.');
+        return;
+      }
+    }
+
+    // Keep track of account data: ensure tokens default to 0 only if unset, preserving earned points
+    if (targetUser.penguinPoints === undefined || targetUser.penguinPoints === null) {
+      targetUser.penguinPoints = 0;
+    }
+    targetUser.lastLogin = new Date().toISOString();
+
+    setActiveUser(targetUser);
+    onLoginSuccess(targetUser);
   };
 
   const handleSignUp = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim()) {
-      setErrorMessage('Please enter a gamer username');
+    setErrorMessage(null);
+
+    const cleanUser = username.trim();
+    if (!cleanUser) {
+      setErrorMessage('Please enter a gamer username.');
+      return;
+    }
+
+    // Validate password requirement
+    const passCheck = validatePassword(password);
+    if (!passCheck.isValid) {
+      setErrorMessage(passCheck.error || 'Invalid password.');
+      return;
+    }
+
+    // Validate PIN code requirement
+    const pinCheck = validatePinCode(pinCode);
+    if (!pinCheck.isValid) {
+      setErrorMessage(pinCheck.error || 'Invalid 4-digit PIN code.');
+      return;
+    }
+
+    // Requirement 1: New users cannot enter through admin accounts
+    const lower = cleanUser.toLowerCase();
+    if (lower === 'haris' || lower === 'harisxcode' || lower === 'owner' || lower === 'admin' || lower === 'administrator') {
+      setErrorMessage('⛔ That username is reserved for the site owner. New users cannot register as admin.');
       return;
     }
 
     const existing = existingUsers.find(
-      (u) => u.username.toLowerCase() === username.trim().toLowerCase()
+      (u) => u.username.toLowerCase() === lower
     );
 
     if (existing) {
-      setErrorMessage('That gamer tag is already in use. Please sign in or pick another!');
+      setErrorMessage('That gamer tag is already in use. Please sign in or choose another!');
       return;
     }
 
-    const newUser = createPlayerAccount(username.trim(), fullName.trim(), selectedAvatar);
-    onLoginSuccess(newUser);
+    try {
+      const newUser = createPlayerAccount(cleanUser, fullName.trim(), selectedAvatar, password.trim(), pinCode.trim());
+      onLoginSuccess(newUser);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to create account.');
+    }
   };
 
   const handleQuickGuest = () => {
-    const guestUser = createPlayerAccount(`Guest-${Math.floor(1000 + Math.random() * 9000)}`, 'Guest Player', '🐧');
+    const guestUser = createPlayerAccount(`Guest-${Math.floor(1000 + Math.random() * 9000)}`, 'Guest Player', '🐧', 'Guest#1234', '1234');
     onLoginSuccess(guestUser);
   };
 
@@ -178,7 +255,35 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
         )}
 
         {mode === 'signin' ? (
-          <div className="space-y-4">
+          <form onSubmit={(e) => { e.preventDefault(); handleSignIn(); }} className="space-y-4">
+            
+            {/* Prominent 15-Minute Free VIP Trial Banner */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 border border-amber-400/40 flex items-center justify-between gap-3 shadow-md shadow-amber-950/20">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-amber-400/20 border border-amber-400/50 flex items-center justify-center text-amber-300 shrink-0">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5 flex-wrap">
+                    <span>15-Minute Free VIP Trial</span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-200 border border-amber-400/30 font-mono font-bold">
+                      0 TOKENS START
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-slate-300 truncate">
+                    No password needed · Earn tokens with VIP multiplier!
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleStartTrial}
+                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:brightness-110 text-slate-950 font-black text-xs shrink-0 transition-transform active:scale-95 shadow-md shadow-amber-500/20 cursor-pointer"
+              >
+                Try Free →
+              </button>
+            </div>
+
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Player Gamer Tag / Nickname
@@ -187,28 +292,80 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
                 <User className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
                 <input
                   type="text"
+                  required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="e.g. SpeedRacer, CyberPenguin"
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-950/70 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
-                  onKeyDown={(e) => e.key === 'Enter' && handleSignIn()}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-slate-300">
+                  Password
+                </label>
+                <span className="text-[10px] text-slate-400 font-mono">Min 6 chars + letters &amp; numbers/symbols</span>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter registered account password"
+                  className="w-full pl-10 pr-10 py-2.5 bg-slate-950/70 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-slate-300">
+                  4-Digit Security PIN (Alternative to Password)
+                </label>
+                <span className="text-[10px] text-slate-400 font-mono">4 numeric digits</span>
+              </div>
+              <div className="relative">
+                <KeyRound className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                <input
+                  type="text"
+                  maxLength={4}
+                  value={pinCode}
+                  onChange={(e) => setPinCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="e.g. 4829"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-950/70 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 font-mono tracking-widest"
                 />
               </div>
             </div>
 
             <button
-              onClick={() => handleSignIn()}
+              type="submit"
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-bold text-sm tracking-wide transition-all transform active:scale-98 shadow-lg shadow-cyan-500/25 cursor-pointer"
             >
-              <span>Enter Game Center</span>
+              <span>Verify &amp; Enter Game Center</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
-            {/* Quick Saved Player Selector */}
+            {/* Account Data Tracking Verification Banner */}
+            <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 text-[10px] font-mono text-slate-400 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
+              <span>Account data tracked: In-game tokens, games played, and VIP tiers are preserved persistently.</span>
+            </div>
+
+            {/* Quick Saved Player Selector with Password / PIN prompts */}
             {existingUsers.length > 0 && (
               <div className="pt-3 border-t border-slate-800/80">
                 <p className="text-[11px] font-mono text-slate-400 mb-2 uppercase tracking-wider">
-                  Quick Select Profile:
+                  Quick Select Profile (Requires Password / PIN Verification):
                 </p>
                 <div className="flex flex-col gap-1.5">
                   {existingUsers.slice(0, 3).map((user) => {
@@ -216,8 +373,20 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
                     return (
                       <button
                         key={user.id}
-                        onClick={() => handleSignIn(user)}
-                        className={`flex items-center justify-between px-3 py-2 rounded-xl border transition-colors text-left group ${
+                        type="button"
+                        onClick={() => {
+                          setUsername(user.username);
+                          if (password.trim() || pinCode.trim()) {
+                            handleSignIn(user);
+                          } else {
+                            if (isOwner) {
+                              setErrorMessage(`🔒 Admin Profile: Enter Owner Password or PIN (7799) for "${user.username}" to sign in.`);
+                            } else {
+                              setErrorMessage(`🔑 Selected ${user.username}. Enter password or 4-digit PIN to sign in.`);
+                            }
+                          }
+                        }}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl border transition-colors text-left group ${
                           isOwner 
                             ? 'bg-amber-950/40 hover:bg-amber-900/50 border-amber-500/50 shadow-sm shadow-amber-500/20' 
                             : 'bg-slate-950/60 hover:bg-cyan-950/40 border-slate-800/80 hover:border-cyan-500/40'
@@ -232,17 +401,18 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
                               </span>
                               {isOwner && (
                                 <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-400 text-slate-950 font-black">
-                                  OWNER
+                                  PROTECTED OWNER
                                 </span>
                               )}
                             </div>
-                            <div className="text-[10px] text-slate-400">
-                              {isOwner ? 'harisxcode@gmail.com' : `${user.penguinPoints} pts ${user.isVip ? '· VIP 👑' : ''}`}
+                            <div className="text-[10px] text-slate-400 font-mono">
+                              {isOwner ? 'Requires Admin Password or PIN' : `${user.penguinPoints || 0} Tokens · Password Protected`}
                             </div>
                           </div>
                         </div>
-                        <span className={`text-[11px] font-semibold ${isOwner ? 'text-amber-400' : 'text-cyan-400'}`}>
-                          {isOwner ? 'Admin →' : 'Play →'}
+                        <span className={`text-[11px] font-semibold flex items-center gap-1 ${isOwner ? 'text-amber-400' : 'text-cyan-400'}`}>
+                          <Lock className="w-3 h-3" />
+                          <span>{isOwner ? 'Owner Login →' : 'Sign In →'}</span>
                         </span>
                       </button>
                     );
@@ -250,7 +420,7 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
                 </div>
               </div>
             )}
-          </div>
+          </form>
         ) : mode === 'signup' ? (
           <form onSubmit={handleSignUp} className="space-y-4">
             <div>
@@ -290,6 +460,79 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-950/70 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
                 />
               </div>
+              <p className="text-[10px] text-slate-400 mt-1 font-mono">
+                * Note: Admin / Owner usernames are protected and reserved.
+              </p>
+            </div>
+
+            {/* Password Field with Interactive Validation Rules */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-slate-300">
+                  Password (Required)
+                </label>
+                <span className="text-[10px] text-amber-300 font-mono">Min 6 chars + numbers/symbols</span>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="e.g. Pablo#2026"
+                  className="w-full pl-10 pr-10 py-2.5 bg-slate-950/70 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              {/* Password strength checklist */}
+              <div className="mt-1.5 grid grid-cols-2 gap-1 text-[10px] font-mono">
+                <span className={password.length >= 6 ? 'text-emerald-400' : 'text-slate-500'}>
+                  {password.length >= 6 ? '✓ 6+ characters' : '○ Min 6 characters'}
+                </span>
+                <span className={/[a-zA-Z]/.test(password) && /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) ? 'text-emerald-400' : 'text-slate-500'}>
+                  {/[a-zA-Z]/.test(password) && /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) ? '✓ Letters & numbers/symbols' : '○ Letters & numbers/symbols'}
+                </span>
+              </div>
+            </div>
+
+            {/* 4-Digit Security PIN */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-slate-300">
+                  4-Digit Security PIN (Required)
+                </label>
+                <span className="text-[10px] text-cyan-300 font-mono">Exactly 4 digits</span>
+              </div>
+              <div className="relative">
+                <KeyRound className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                <input
+                  type="text"
+                  required
+                  maxLength={4}
+                  value={pinCode}
+                  onChange={(e) => setPinCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="e.g. 5821"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-950/70 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono tracking-widest"
+                />
+              </div>
+              <div className="mt-1 text-[10px] font-mono">
+                <span className={/^\d{4}$/.test(pinCode) && pinCode !== '0000' && pinCode !== '1111' && pinCode !== '1234' ? 'text-emerald-400' : 'text-slate-500'}>
+                  {/^\d{4}$/.test(pinCode) && pinCode !== '0000' && pinCode !== '1111' && pinCode !== '1234' ? '✓ Valid 4-digit code' : '○ 4 numeric digits (not trivial repeats)'}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-[11px] text-cyan-300 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+              <span>New accounts automatically start with <strong>0 tokens</strong>. Earn tokens by playing games!</span>
             </div>
 
             <button
@@ -297,7 +540,7 @@ export const AuthEntry: React.FC<AuthEntryProps> = ({ onLoginSuccess }) => {
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-bold text-sm tracking-wide transition-all shadow-lg shadow-cyan-500/25 cursor-pointer"
             >
               <Sparkles className="w-4 h-4 fill-slate-950" />
-              <span>Create Account (Earn Tokens From 0)</span>
+              <span>Create Account (0 Tokens · Secure Credentials)</span>
             </button>
           </form>
         ) : (

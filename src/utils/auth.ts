@@ -189,7 +189,7 @@ export const PENGUIN_SNACKS: PenguinSnack[] = [
   }
 ];
 
-// Initial demo accounts
+// Initial demo accounts with verified credentials
 const DEFAULT_ACCOUNTS: UserAccount[] = [
   {
     id: 'user-haris-owner',
@@ -197,6 +197,8 @@ const DEFAULT_ACCOUNTS: UserAccount[] = [
     fullName: 'Haris (Website Owner)',
     email: 'harisxcode@gmail.com',
     avatar: '👑',
+    passwordHash: 'Owner#2026!',
+    pinCode: '7799',
     activeTitle: 'Diamond Overlord',
     unlockedTitles: ['Diamond Overlord', 'Emperor of Ice', 'Golden Legend', 'VIP Grinder'],
     unlockedAvatars: ['👑', '💎', '🐧', '🏆'],
@@ -219,6 +221,8 @@ const DEFAULT_ACCOUNTS: UserAccount[] = [
     fullName: 'Guest Challenger',
     email: 'guest@harisgamecenter.com',
     avatar: '🐧',
+    passwordHash: 'Arcade#1234',
+    pinCode: '1234',
     activeTitle: 'Guest Challenger',
     unlockedTitles: ['Guest Challenger'],
     unlockedAvatars: ['🐧'],
@@ -239,6 +243,8 @@ const DEFAULT_ACCOUNTS: UserAccount[] = [
     fullName: 'Pablo Fan Club #1',
     email: 'vip@harisgamecenter.com',
     avatar: '👑',
+    passwordHash: 'Pablo#5678',
+    pinCode: '5678',
     activeTitle: 'Golden Legend',
     unlockedTitles: ['Golden Legend', "Pablo's Champion", 'VIP Grinder'],
     unlockedAvatars: ['👑', '⭐', '🐧'],
@@ -265,6 +271,60 @@ export function isOwnerAccount(user: UserAccount | null): boolean {
     username === 'haris' ||
     username === 'harisxcode'
   );
+}
+
+// Weak & common passwords to reject
+const WEAK_PASSWORDS = new Set([
+  '123456', '12345678', 'password', 'password1', 'password123', 
+  'qwerty', '111111', '000000', 'admin', 'admin123', 'guest123', 
+  'pass123', 'abcdef', 'welcome', 'letmein', 'gamer123'
+]);
+
+/**
+ * Validate password requirements:
+ * Must be at least 6 characters, contains letters AND numbers/symbols, not in common weak list
+ */
+export function validatePassword(password: string): { isValid: boolean; error?: string } {
+  if (!password || password.trim().length < 6) {
+    return { isValid: false, error: 'Password must be at least 6 characters long.' };
+  }
+  const clean = password.trim();
+  if (WEAK_PASSWORDS.has(clean.toLowerCase())) {
+    return { 
+      isValid: false, 
+      error: 'Password is too common or easily guessed. Please use a unique password with letters and numbers/symbols.' 
+    };
+  }
+  const hasLetter = /[a-zA-Z]/.test(clean);
+  const hasNumberOrSymbol = /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(clean);
+  if (!hasLetter || !hasNumberOrSymbol) {
+    return { 
+      isValid: false, 
+      error: 'Password must contain both letters and numbers/special characters (e.g. Pablo#2026).' 
+    };
+  }
+  return { isValid: true };
+}
+
+/**
+ * Validate 4-digit PIN code:
+ * Must be exactly 4 digits, disallowing trivial repeats like 0000, 1111
+ */
+export function validatePinCode(pin: string): { isValid: boolean; error?: string } {
+  if (!pin) {
+    return { isValid: false, error: 'Security PIN must be exactly 4 digits (e.g. 4829).' };
+  }
+  const clean = pin.trim();
+  if (!/^\d{4}$/.test(clean)) {
+    return { isValid: false, error: 'Security PIN must be exactly 4 numeric digits (0-9).' };
+  }
+  if (clean === '0000' || clean === '1111' || clean === '9999' || clean === '1234' || clean === '4321') {
+    return { 
+      isValid: false, 
+      error: 'PIN code is too predictable. Choose a secure 4-digit code (e.g. 5824).' 
+    };
+  }
+  return { isValid: true };
 }
 
 const TIER_HIERARCHY: Record<VipTierLevel, number> = {
@@ -399,27 +459,44 @@ export function setActiveUser(user: UserAccount | null): void {
 export function createPlayerAccount(
   username: string,
   fullName: string = '',
-  avatar: string = '🐧'
+  avatar: string = '🐧',
+  password?: string,
+  pinCode?: string
 ): UserAccount {
-  const isHaris = username.toLowerCase().trim() === 'haris' || username.toLowerCase().trim() === 'harisxcode';
+  const cleanUsername = username.trim();
+  const lowerUser = cleanUsername.toLowerCase();
+  
+  // Requirement 1: New users CANNOT enter through admin accounts
+  // Disallow new users from creating or impersonating admin usernames
+  const isProtectedAdminName = 
+    lowerUser === 'haris' || 
+    lowerUser === 'harisxcode' || 
+    lowerUser === 'owner' || 
+    lowerUser === 'admin' ||
+    lowerUser === 'administrator';
+
+  if (isProtectedAdminName) {
+    throw new Error('This username is reserved for the site owner and cannot be created as a new user.');
+  }
+
   const newUser: UserAccount = {
     id: `user-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-    username: username.trim(),
-    fullName: fullName.trim() || username.trim(),
-    email: isHaris ? 'harisxcode@gmail.com' : `${username.toLowerCase().replace(/\s+/g, '')}@player.local`,
-    avatar: isHaris ? '👑' : avatar,
-    activeTitle: isHaris ? 'Diamond Overlord' : 'Arcade Challenger',
-    unlockedTitles: isHaris 
-      ? ['Diamond Overlord', 'Emperor of Ice', 'Golden Legend', 'VIP Grinder']
-      : ['Arcade Challenger'],
-    unlockedAvatars: isHaris ? ['👑', '💎', '🐧'] : [avatar],
-    penguinPoints: isHaris ? 9999 : 0, // Starts from ZERO tokens for each player account
-    isVip: isHaris,
-    vipTier: isHaris ? 'diamond' : 'none',
-    isAdmin: isHaris,
+    username: cleanUsername,
+    fullName: fullName.trim() || cleanUsername,
+    email: `${lowerUser.replace(/\s+/g, '')}@player.local`,
+    avatar: avatar,
+    passwordHash: password ? password.trim() : undefined,
+    pinCode: pinCode ? pinCode.trim() : undefined,
+    activeTitle: 'Arcade Challenger',
+    unlockedTitles: ['Arcade Challenger'],
+    unlockedAvatars: [avatar],
+    penguinPoints: 0, // Starts from ZERO tokens for every new player account
+    isVip: false,
+    vipTier: 'none',
+    isAdmin: false, // New users NEVER get admin status
     createdAt: new Date().toISOString(),
     lastLogin: new Date().toISOString(),
-    gamesPlayedCount: isHaris ? 150 : 0,
+    gamesPlayedCount: 0,
     favoriteGameIds: [],
     snacksFedCount: 0,
     pabloAffection: 15,

@@ -118,6 +118,23 @@ export default function App() {
   const [isDiscordModalOpen, setIsDiscordModalOpen] = useState(false);
   const [isChromebookModalOpen, setIsChromebookModalOpen] = useState(false);
   const [isChromebookTurbo, setIsChromebookTurbo] = useState(() => isChromebookTurboActive());
+  const [isSingleScreen, setIsSingleScreen] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('haris_single_screen_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggleSingleScreen = () => {
+    setIsSingleScreen(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('haris_single_screen_mode', String(next));
+      } catch {}
+      return next;
+    });
+  };
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('haris_sidebar_open');
@@ -384,7 +401,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#030712] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950 relative">
+    <div className={`min-h-screen bg-[#030712] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950 relative ${isChromebookTurbo ? 'chromebook-mode' : ''} ${isSingleScreen ? 'single-screen-mode' : ''}`}>
       
       {/* Arctic Snowfall Effect */}
       <SnowfallEffect enabled={snowEnabled} />
@@ -1079,6 +1096,8 @@ export default function App() {
         onClose={() => setIsChromebookModalOpen(false)}
         onTriggerStealth={() => setIsStealthActive(true)}
         onToggleSnow={(en) => setSnowEnabled(en)}
+        isSingleScreen={isSingleScreen}
+        onToggleSingleScreen={handleToggleSingleScreen}
       />
 
       {/* Season 1: Neon Frost Pass Modal */}

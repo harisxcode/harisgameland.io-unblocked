@@ -28,18 +28,23 @@ interface ChromebookModalProps {
   onClose: () => void;
   onTriggerStealth?: () => void;
   onToggleSnow?: (enabled: boolean) => void;
+  isSingleScreen?: boolean;
+  onToggleSingleScreen?: () => void;
 }
 
 export const ChromebookModal: React.FC<ChromebookModalProps> = ({
   isOpen,
   onClose,
   onTriggerStealth,
-  onToggleSnow
+  onToggleSnow,
+  isSingleScreen = false,
+  onToggleSingleScreen
 }) => {
   const [profile] = useState(() => detectDeviceProfile());
   const [isTurbo, setIsTurbo] = useState(() => isChromebookTurboActive());
   const [activeCloak, setActiveCloak] = useState<TabCloakType>(() => getStoredTabCloak());
   const [cleanedRam, setCleanedRam] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   if (!isOpen) return null;
 
@@ -176,6 +181,83 @@ export const ChromebookModal: React.FC<ChromebookModalProps> = ({
               }`}
             >
               {isTurbo ? 'Turbo Enabled' : 'Enable Turbo'}
+            </button>
+          </div>
+
+          {/* Single-Screen 100vh Mode (Fit on One Screen Without Scrollbars) */}
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-[#0a1333] to-blue-500/10 border-2 border-purple-500/40 shadow-xl flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Maximize2 className="w-5 h-5 text-purple-400" />
+                <h4 className="text-base font-bold text-white font-display">
+                  Single-Screen 100vh Layout (No Scrollbars)
+                </h4>
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold ${
+                  isSingleScreen ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-slate-800 text-slate-400'
+                }`}>
+                  {isSingleScreen ? '100vh LOCKED' : 'STANDARD'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Applies <code className="text-purple-300 font-mono">height: 100vh</code> and <code className="text-purple-300 font-mono">overflow: hidden</code> so the entire application fits neatly on one screen without triggering browser window scrollbars.
+              </p>
+            </div>
+
+            {onToggleSingleScreen && (
+              <button
+                onClick={onToggleSingleScreen}
+                className={`px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-md cursor-pointer shrink-0 ${
+                  isSingleScreen
+                    ? 'bg-purple-500 text-slate-950 shadow-purple-500/25'
+                    : 'bg-slate-900 text-slate-300 hover:text-white border border-slate-700'
+                }`}
+              >
+                {isSingleScreen ? 'Disable 100vh' : 'Fit to 100vh'}
+              </button>
+            )}
+          </div>
+
+          {/* Local Standalone File Download (Bypasses School Network Blocks via file://) */}
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-[#07192f] to-cyan-500/10 border-2 border-emerald-500/40 shadow-xl flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-emerald-400" />
+                <h4 className="text-base font-bold text-white font-display">
+                  Download Offline Local HTML (.html)
+                </h4>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+                  file:// UNBLOCKABLE
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Single self-contained HTML file with all HTML, CSS, JavaScript, canvas games, and audio inlined. Opens via <code className="text-emerald-300 font-mono">file://</code> locally on school Chromebooks without making any network requests.
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                setIsDownloading(true);
+                playArcadeSfx('launch');
+                const link = document.createElement('a');
+                link.href = '/haris_gamecenter_offline.html';
+                link.download = 'haris_gamecenter_offline.html';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => setIsDownloading(false), 2500);
+              }}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 hover:brightness-110 text-slate-950 font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-500/25 cursor-pointer shrink-0 flex items-center gap-1.5"
+            >
+              {isDownloading ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-slate-950" />
+                  <span>Saved to Downloads!</span>
+                </>
+              ) : (
+                <>
+                  <span>Download .html</span>
+                </>
+              )}
             </button>
           </div>
 
