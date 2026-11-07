@@ -115,6 +115,113 @@ export const DisguiseOverlay: React.FC<DisguiseOverlayProps> = ({
           </p>
         </div>
       )}
+
+      {disguiseType === 'google_search' && (
+        <div className="min-h-screen bg-white text-[#202124] flex flex-col justify-between font-sans">
+          {/* Google Top Bar */}
+          <div className="flex items-center justify-between p-4 px-6 text-sm">
+            <div className="flex items-center gap-4 text-slate-600 text-xs">
+              <span className="hover:underline cursor-pointer">About</span>
+              <span className="hover:underline cursor-pointer">Store</span>
+            </div>
+            <div className="flex items-center gap-4 text-slate-700 text-xs">
+              <span className="hover:underline cursor-pointer">Gmail</span>
+              <span className="hover:underline cursor-pointer">Images</span>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 cursor-pointer">
+                <div className="grid grid-cols-3 gap-0.5 w-4 h-4">
+                  {[...Array(9)].map((_, i) => (
+                    <div key={i} className="w-1 h-1 bg-slate-600 rounded-full" />
+                  ))}
+                </div>
+              </div>
+              <button className="px-5 py-2 bg-[#1a73e8] hover:bg-[#1557b0] text-white font-medium rounded text-xs transition-colors cursor-pointer">
+                Sign in
+              </button>
+            </div>
+          </div>
+
+          {/* Google Main Search Section */}
+          <div className="flex-1 flex flex-col items-center justify-center px-4 max-w-2xl mx-auto w-full -mt-16">
+            <div className="text-7xl sm:text-8xl font-bold tracking-tight mb-7 select-none font-display">
+              <span className="text-[#4285F4]">G</span>
+              <span className="text-[#EA4335]">o</span>
+              <span className="text-[#FBBC05]">o</span>
+              <span className="text-[#4285F4]">g</span>
+              <span className="text-[#34A853]">l</span>
+              <span className="text-[#EA4335]">e</span>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const input = form.elements.namedItem('q') as HTMLInputElement;
+                if (input && input.value.trim()) {
+                  window.open(`https://www.google.com/search?q=${encodeURIComponent(input.value.trim())}`, '_blank');
+                }
+              }}
+              className="w-full"
+            >
+              <div className="relative flex items-center w-full shadow-md hover:shadow-lg focus-within:shadow-lg rounded-full border border-slate-200 hover:border-slate-300 transition-all">
+                <div className="pl-4 text-slate-400">
+                  <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+                    <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  name="q"
+                  placeholder="Search Google or type a URL"
+                  defaultValue="AP World History study guide"
+                  className="w-full py-3 pl-3 pr-12 text-sm text-slate-800 placeholder:text-slate-400 rounded-full focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-center gap-3 mt-6">
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#f8f9fa] hover:bg-[#f1f3f4] border border-[#f8f9fa] hover:border-[#dadce0] rounded text-xs text-slate-800 font-medium transition-all"
+                >
+                  Google Search
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.open('https://www.google.com/search?btnI=1&q=AP+World+History+notes', '_blank')}
+                  className="px-4 py-2 bg-[#f8f9fa] hover:bg-[#f1f3f4] border border-[#f8f9fa] hover:border-[#dadce0] rounded text-xs text-slate-800 font-medium transition-all"
+                >
+                  I'm Feeling Lucky
+                </button>
+              </div>
+            </form>
+
+            <div className="text-xs text-slate-600 mt-6">
+              Google offered in: <span className="text-[#1a0dab] hover:underline cursor-pointer">Español</span>{' '}
+              <span className="text-[#1a0dab] hover:underline cursor-pointer">Français</span>{' '}
+              <span className="text-[#1a0dab] hover:underline cursor-pointer">Deutsch</span>
+            </div>
+          </div>
+
+          {/* Google Footer */}
+          <div className="bg-[#f2f2f2] text-[#70757a] text-xs">
+            <div className="px-6 py-3 border-b border-[#dadce0]">
+              United States
+            </div>
+            <div className="px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex gap-6">
+                <span className="hover:underline cursor-pointer">About</span>
+                <span className="hover:underline cursor-pointer">Advertising</span>
+                <span className="hover:underline cursor-pointer">Business</span>
+                <span className="hover:underline cursor-pointer">How Search works</span>
+              </div>
+              <div className="flex gap-6">
+                <span className="hover:underline cursor-pointer">Privacy</span>
+                <span className="hover:underline cursor-pointer">Terms</span>
+                <span className="hover:underline cursor-pointer">Settings</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

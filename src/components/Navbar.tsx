@@ -22,7 +22,8 @@ import {
   Gem,
   Laptop,
   Zap,
-  Clock
+  Clock,
+  Flame
 } from 'lucide-react';
 import { UserAccount } from '../types';
 import { isOwnerAccount, getTrialRemainingSeconds } from '../utils/auth';
@@ -59,6 +60,8 @@ interface NavbarProps {
   onOpenYouTubeModal?: () => void;
   onOpenTokenPacks?: () => void;
   onOpenSignIn?: () => void;
+  onOpenDailyStreak?: () => void;
+  onOpenGoogleSearch?: () => void;
 }
 
 export function Navbar({ 
@@ -88,7 +91,9 @@ export function Navbar({
   onOpenCharityModal,
   onOpenYouTubeModal,
   onOpenTokenPacks,
-  onOpenSignIn
+  onOpenSignIn,
+  onOpenDailyStreak,
+  onOpenGoogleSearch
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
@@ -352,6 +357,25 @@ export function Navbar({
             </button>
           )}
 
+          {/* Google Search Engine Quick Button */}
+          {onOpenGoogleSearch && (
+            <button
+              onClick={onOpenGoogleSearch}
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-950/80 via-slate-900 to-indigo-950/80 border border-blue-500/40 hover:border-blue-400 text-blue-200 hover:text-white transition-all text-xs font-bold shadow-sm shadow-blue-950/40 cursor-pointer group"
+              title="Google Search Engine - Real Web Search, Game Walkthroughs & School Tools"
+            >
+              <span className="flex items-center font-bold text-xs tracking-tight">
+                <span className="text-[#4285F4]">G</span>
+                <span className="text-[#EA4335]">o</span>
+                <span className="text-[#FBBC05]">o</span>
+                <span className="text-[#4285F4]">g</span>
+                <span className="text-[#34A853]">l</span>
+                <span className="text-[#EA4335]">e</span>
+              </span>
+              <span className="text-[10px] text-slate-400 group-hover:text-blue-300 hidden xl:inline">Search</span>
+            </button>
+          )}
+
           {/* Pablo Hub shortcut button */}
           <button
             onClick={onOpenPabloHub}
@@ -413,6 +437,17 @@ export function Navbar({
                 <Coins className="w-3.5 h-3.5 text-amber-400" />
                 <span>{points} Tokens</span>
               </div>
+
+              {/* Daily Login Streak Counter */}
+              <button 
+                onClick={onOpenDailyStreak}
+                type="button"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-orange-500/15 to-amber-500/15 border border-orange-500/40 text-orange-300 text-xs font-mono font-bold shadow-sm cursor-pointer hover:bg-orange-500/25 hover:border-orange-400 hover:scale-105 transition-all"
+                title={`🔥 Daily Login Streak: ${currentUser.dailyLoginStreak || 1} Day${(currentUser.dailyLoginStreak || 1) > 1 ? 's' : ''}! Return every consecutive day to earn bonus Penguin Points. Click for streak reward tiers!`}
+              >
+                <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-400 animate-pulse" />
+                <span>{currentUser.dailyLoginStreak || 1}d Streak</span>
+              </button>
 
               {/* Buy Tokens USD Packs Button */}
               {onOpenTokenPacks && (
@@ -592,6 +627,26 @@ export function Navbar({
             )}
           </div>
 
+          {/* Mobile Daily Login Streak Counter */}
+          {currentUser && (
+            <button
+              onClick={() => {
+                onOpenDailyStreak?.();
+                setMobileMenuOpen(false);
+              }}
+              type="button"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-gradient-to-r from-orange-950/60 via-[#1e0e05] to-amber-950/50 border border-orange-500/40 hover:border-orange-400 text-orange-300 text-xs font-bold shadow-sm transition-all cursor-pointer"
+            >
+              <span className="flex items-center gap-2">
+                <Flame className="w-4 h-4 text-orange-400 fill-orange-400 animate-pulse" />
+                <span>Daily Login Streak</span>
+              </span>
+              <span className="font-mono text-xs bg-orange-500/20 px-2.5 py-0.5 rounded-lg border border-orange-500/40 text-orange-200 font-bold">
+                {currentUser.dailyLoginStreak || 1} Day{(currentUser.dailyLoginStreak || 1) > 1 ? 's' : ''} Active 🔥
+              </span>
+            </button>
+          )}
+
           {/* Mobile VIP Membership Hub Button */}
           <button
             onClick={() => { onOpenVipModal(); setMobileMenuOpen(false); }}
@@ -693,6 +748,31 @@ export function Navbar({
             <span>🐧 Pablo Arcade Hub (Tips &amp; Pet)</span>
             <span>Open →</span>
           </button>
+
+          {onOpenGoogleSearch && (
+            <button
+              onClick={() => {
+                onOpenGoogleSearch();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-gradient-to-r from-blue-950/60 to-slate-900 border border-blue-500/40 text-blue-200 text-xs font-bold cursor-pointer hover:border-blue-400"
+            >
+              <span className="flex items-center gap-2">
+                <span className="flex items-center font-bold text-xs tracking-tight">
+                  <span className="text-[#4285F4]">G</span>
+                  <span className="text-[#EA4335]">o</span>
+                  <span className="text-[#FBBC05]">o</span>
+                  <span className="text-[#4285F4]">g</span>
+                  <span className="text-[#34A853]">l</span>
+                  <span className="text-[#EA4335]">e</span>
+                </span>
+                <span>Search Engine &amp; Walkthroughs</span>
+              </span>
+              <span className="font-mono text-[9px] text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded border border-blue-500/30">
+                Search →
+              </span>
+            </button>
+          )}
 
           <button
             onClick={() => { onTriggerStealth(); setMobileMenuOpen(false); }}

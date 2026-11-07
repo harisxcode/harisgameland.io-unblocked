@@ -10,11 +10,12 @@ import {
   Mail, 
   Copy, 
   Check, 
-  Crown
+  Crown,
+  Award
 } from 'lucide-react';
 import { playArcadeSfx } from '../utils/audio';
 
-export type LegalTab = 'privacy' | 'terms' | 'dmca' | 'cookies' | 'safety';
+export type LegalTab = 'privacy' | 'terms' | 'dmca' | 'cookies' | 'safety' | 'license';
 
 interface LegalModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ interface LegalModalProps {
 export function LegalModal({ isOpen, onClose, initialTab = 'privacy' }: LegalModalProps) {
   const [activeTab, setActiveTab] = useState<LegalTab>(initialTab);
   const [copiedEmail, setCopiedEmail] = useState(false);
+  const [copiedLicense, setCopiedLicense] = useState(false);
 
   useEffect(() => {
     if (initialTab) {
@@ -51,12 +53,42 @@ export function LegalModal({ isOpen, onClose, initialTab = 'privacy' }: LegalMod
     setTimeout(() => setCopiedEmail(false), 2500);
   };
 
+  const MIT_LICENSE_TEXT = `MIT License
+
+Copyright (c) 2026 Haris (Haris Game Center) & Pablo the Penguin Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.`;
+
+  const handleCopyLicense = () => {
+    navigator.clipboard.writeText(MIT_LICENSE_TEXT);
+    setCopiedLicense(true);
+    playArcadeSfx('click');
+    setTimeout(() => setCopiedLicense(false), 2500);
+  };
+
   const tabs = [
     { id: 'privacy' as LegalTab, label: 'Privacy Policy', icon: ShieldCheck, badge: 'Zero Tracking' },
     { id: 'terms' as LegalTab, label: 'Terms of Agreement', icon: FileText, badge: 'VIP & Rules' },
     { id: 'dmca' as LegalTab, label: 'DMCA & Copyright', icon: Scale, badge: 'Fair Use & IP' },
     { id: 'cookies' as LegalTab, label: 'Cookie & Storage', icon: Cookie, badge: 'Local Only' },
     { id: 'safety' as LegalTab, label: 'School Safety & Unblocked', icon: School, badge: '100% Secure' },
+    { id: 'license' as LegalTab, label: 'MIT License', icon: Award, badge: 'Open Source' },
   ];
 
   return (
@@ -487,6 +519,99 @@ export function LegalModal({ isOpen, onClose, initialTab = 'privacy' }: LegalMod
                     All assets, chiptunes, and scripts are encrypted end-to-end via TLS 1.3 / HTTPS. No unencrypted HTTP packets are transmitted.
                   </p>
                 </section>
+              </div>
+            </div>
+          )}
+
+          {/* ================= TAB 6: MIT LICENSE & OPEN SOURCE ================= */}
+          {activeTab === 'license' && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <Award className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-bold text-white text-base flex items-center gap-2">
+                      <span>The MIT License (MIT)</span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                        Open Source &amp; Free Software
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-300 mt-1">
+                      Haris Game Center is fully open-source and released under the permissive, globally recognized MIT License.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleCopyLicense}
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-300 font-mono text-xs font-bold transition-all cursor-pointer shrink-0"
+                >
+                  {copiedLicense ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-emerald-300">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy License</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Permission & Condition Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
+                  <span className="font-bold text-emerald-400 font-mono uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Permissions Granted:
+                  </span>
+                  <ul className="list-disc list-inside space-y-0.5 text-slate-300 pl-1">
+                    <li><strong>Commercial use:</strong> Deploy, host, or adapt for personal or enterprise hubs.</li>
+                    <li><strong>Modification:</strong> Add custom web games, soundtracks, and themes.</li>
+                    <li><strong>Distribution:</strong> Share code or fork to your GitHub repository.</li>
+                    <li><strong>Private use:</strong> Run offline or locally on school Chromebooks.</li>
+                  </ul>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
+                  <span className="font-bold text-cyan-400 font-mono uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                    <Scale className="w-3.5 h-3.5" /> Conditions &amp; Limitations:
+                  </span>
+                  <ul className="list-disc list-inside space-y-0.5 text-slate-300 pl-1">
+                    <li><strong>License &amp; Copyright Notice:</strong> Include the original MIT notice in copies.</li>
+                    <li><strong>Zero Warranty:</strong> Software is provided "as is" with no guarantee.</li>
+                    <li><strong>No Liability:</strong> Authors are not liable for claims or damages.</li>
+                    <li><strong>Freedom to Innovate:</strong> Open for educational &amp; gaming communities.</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Official License Text Block */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                  <span className="font-bold text-white">Official MIT License Text (LICENSE)</span>
+                  <button
+                    onClick={handleCopyLicense}
+                    className="text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer"
+                  >
+                    {copiedLicense ? 'Copied to Clipboard!' : 'Click to copy text'}
+                  </button>
+                </div>
+
+                <pre className="p-4 rounded-xl bg-[#050b1a] border border-cyan-500/20 text-[11px] font-mono text-slate-300 whitespace-pre-wrap leading-relaxed overflow-x-auto shadow-inner select-all">
+                  {MIT_LICENSE_TEXT}
+                </pre>
+              </div>
+
+              {/* GitHub Repository Reference */}
+              <div className="p-3 rounded-xl bg-blue-950/20 border border-blue-500/20 text-xs text-slate-300 flex items-center justify-between">
+                <span>
+                  GitHub Repository: <strong className="text-white font-mono">harisxcode/game-center</strong>
+                </span>
+                <span className="text-amber-300 font-mono font-bold">
+                  License: MIT
+                </span>
               </div>
             </div>
           )}

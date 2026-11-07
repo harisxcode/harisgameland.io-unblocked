@@ -67,6 +67,8 @@ interface SidebarMenuProps {
   onOpenYouTubeModal?: () => void;
   onOpenTokenPacks?: () => void;
   onOpenSignIn?: () => void;
+  onOpenDailyStreak?: () => void;
+  onOpenGoogleSearch?: () => void;
 }
 
 export function SidebarMenu({
@@ -93,7 +95,9 @@ export function SidebarMenu({
   onOpenCharityModal,
   onOpenYouTubeModal,
   onOpenTokenPacks,
-  onOpenSignIn
+  onOpenSignIn,
+  onOpenDailyStreak,
+  onOpenGoogleSearch
 }: SidebarMenuProps) {
   const isOwner = isOwnerAccount(currentUser);
   const tierInfo = currentUser ? calculateTier(currentUser.seasonPassXp || 0) : null;
@@ -259,6 +263,27 @@ export function SidebarMenu({
                 </div>
               )}
             </div>
+          )}
+
+          {/* Daily Login Streak Pill in Sidebar */}
+          {currentUser && onOpenDailyStreak && (
+            <button
+              onClick={() => {
+                playArcadeSfx('click');
+                onOpenDailyStreak();
+              }}
+              type="button"
+              className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-gradient-to-r from-orange-950/60 via-[#1c0e04] to-amber-950/40 border border-orange-500/40 hover:border-orange-400 text-orange-300 text-xs font-bold transition-all cursor-pointer group shadow-sm"
+              title="View Daily Login Streak rewards and consecutive calendar progression"
+            >
+              <span className="flex items-center gap-2">
+                <Flame className="w-4 h-4 text-orange-400 fill-orange-400 group-hover:scale-110 transition-transform animate-pulse" />
+                <span>Daily Login Streak</span>
+              </span>
+              <span className="font-mono text-[11px] bg-orange-500/20 px-2.5 py-0.5 rounded-lg border border-orange-500/30 text-orange-200">
+                {currentUser.dailyLoginStreak || 1} Days Active 🔥
+              </span>
+            </button>
           )}
 
           {/* ========================================================
@@ -446,6 +471,43 @@ export function SidebarMenu({
                   </div>
                   <span className="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-mono text-[10px] uppercase font-black">
                     Store
+                  </span>
+                </button>
+              )}
+
+              {/* Google Search Engine Tool Button */}
+              {onOpenGoogleSearch && (
+                <button
+                  onClick={() => {
+                    playArcadeSfx('click');
+                    onOpenGoogleSearch();
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-blue-950/40 hover:bg-blue-900/50 border border-blue-500/30 hover:border-blue-400/60 flex items-center justify-between text-left transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">🌐</span>
+                    <div>
+                      <div className="font-bold text-xs text-blue-300 group-hover:text-blue-200 transition-colors flex items-center gap-1.5">
+                        <span className="flex items-center tracking-tight font-display">
+                          <span className="text-[#4285F4]">G</span>
+                          <span className="text-[#EA4335]">o</span>
+                          <span className="text-[#FBBC05]">o</span>
+                          <span className="text-[#4285F4]">g</span>
+                          <span className="text-[#34A853]">l</span>
+                          <span className="text-[#EA4335]">e</span>
+                        </span>
+                        <span>Search</span>
+                        <span className="px-1.5 py-0.2 rounded text-[8px] bg-blue-500/20 text-blue-300 font-mono font-bold">
+                          ENGINE
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono">
+                        Walkthroughs, Homework &amp; Stealth
+                      </div>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 font-mono text-[10px] uppercase font-bold">
+                    Search
                   </span>
                 </button>
               )}
@@ -803,6 +865,25 @@ export function SidebarMenu({
                 <School className="w-3.5 h-3.5 text-cyan-400 mb-1" />
                 <div className="font-bold text-[10px]">School Safety</div>
                 <div className="text-[8px] text-slate-500">Friendly learning</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  playArcadeSfx('click');
+                  onOpenLegal('license');
+                }}
+                className="col-span-2 p-2 rounded-xl bg-amber-950/30 hover:bg-amber-950/50 border border-amber-500/30 text-left text-xs text-amber-200 hover:text-white transition-colors cursor-pointer flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">📄</span>
+                  <div>
+                    <div className="font-bold text-[10px] text-amber-300">Open Source MIT License</div>
+                    <div className="text-[8px] text-slate-400">Permissive 2026 License · Commercial &amp; Private Use</div>
+                  </div>
+                </div>
+                <span className="text-[9px] font-mono font-bold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">
+                  MIT
+                </span>
               </button>
             </div>
           </div>

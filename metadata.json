@@ -1,6 +1,6 @@
 {
   "name": "Haris Game Center",
-  "description": "Interactive landing hub for Haris's arcade and racing web games, featuring Nitro League, Roblox (Cloud), Flappy Bird Arcade, and Meme Mania with instant play links and open source repositories.",
+  "description": "Interactive landing hub for Haris's arcade and racing web games, featuring Nitro League, Roblox (Cloud), Google Search Engine, and Pablo the Penguin. Open source under the MIT License.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

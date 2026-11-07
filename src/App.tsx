@@ -42,10 +42,14 @@ import { PlayerLockerModal } from './components/PlayerLockerModal';
 import { PabloCharityModal } from './components/PabloCharityModal';
 import { YouTubePlayerModal } from './components/YouTubePlayerModal';
 import { TokenPacksModal } from './components/TokenPacksModal';
+import { DailyStreakModal } from './components/DailyStreakModal';
+import { GoogleSearchModal } from './components/GoogleSearchModal';
 import { INITIAL_GAMES, Game, UNIVERSAL_CATEGORIES } from './data/games';
-import { UserAccount } from './types';
+import { UserAccount, DisguiseType } from './types';
 import { getActiveUser, setActiveUser, awardPenguinPoints, hasVipTierAccess, isOwnerAccount, calculateGameTokenReward, getTrialRemainingSeconds } from './utils/auth';
 import { awardSeasonXp, recordQuestAction, ensureUserProgression, ARCADE_BORDER_THEMES } from './utils/seasonPass';
+import { getTodayLocalDateStr, getYesterdayLocalDateStr, calculateDailyStreakRewardPoints } from './utils/streak';
+import { playClaimRewardSfx } from './utils/audio';
 
 import { 
   Gamepad2, 
@@ -68,7 +72,8 @@ import {
   PanelLeftOpen,
   Mail,
   Server,
-  Laptop
+  Laptop,
+  X
 } from 'lucide-react';
 
 export default function App() {
@@ -85,8 +90,16 @@ export default function App() {
   const [isCharityModalOpen, setIsCharityModalOpen] = useState(false);
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
   const [isTokenPacksOpen, setIsTokenPacksOpen] = useState(false);
+  const [isDailyStreakModalOpen, setIsDailyStreakModalOpen] = useState(false);
+  const [dailyStreakRewardNotification, setDailyStreakRewardNotification] = useState<{
+    streak: number;
+    bonusPoints: number;
+    isContinuation: boolean;
+  } | null>(null);
   const [targetVipGame, setTargetVipGame] = useState<Game | null>(null);
   const [isStealthActive, setIsStealthActive] = useState(false);
+  const [stealthDisguiseType, setStealthDisguiseType] = useState<DisguiseType>('google_search');
+  const [isGoogleSearchOpen, setIsGoogleSearchOpen] = useState(false);
   const [snowEnabled, setSnowEnabled] = useState(true);
 
   const [games, setGames] = useState<Game[]>(() => {
@@ -193,6 +206,9 @@ export default function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === ']') {
         setIsStealthActive(prev => !prev);
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'g' || e.key === 'G')) {
+        e.preventDefault();
+        setIsGoogleSearchOpen(prev => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -270,10 +286,80 @@ export default function App() {
     setHasAgreedTerms(false);
   };
 
+  // Daily Login Streak system: rewards players with bonus Penguin Points for returning to the Game Center on consecutive days
+  const checkAndAwardDailyLoginStreak = (user: UserAccount): UserAccount => {
+    const todayStr = getTodayLocalDateStr();
+    const yesterdayStr = getYesterdayLocalDateStr();
+
+    // Already claimed today: maintain current streak without duplicate points
+    if (user.lastDailyStreakRewardDate === todayStr) {
+      return user;
+    }
+
+    let newStreak = 1;
+    let isContinuation = false;
+
+    if (user.lastDailyStreakRewardDate === yesterdayStr) {
+      // Returned next consecutive day! Increment streak
+      newStreak = (user.dailyLoginStreak || 0) + 1;
+      isContinuation = true;
+    } else {
+      // First time or missed day(s): start from Day 1
+      newStreak = 1;
+      isContinuation = false;
+    }
+
+    const bonusPoints = calculateDailyStreakRewardPoints(newStreak, user.vipTier);
+    const updatedUser: UserAccount = {
+      ...user,
+      penguinPoints: (user.penguinPoints || 0) + bonusPoints,
+      dailyLoginStreak: newStreak,
+      lastDailyStreakRewardDate: todayStr
+    };
+
+    setActiveUser(updatedUser);
+
+    try {
+      awardSeasonXp(60, `Day ${newStreak} Login Streak`);
+      recordQuestAction('daily_games_played', 0);
+    } catch {}
+
+    playClaimRewardSfx();
+    setDailyStreakRewardNotification({
+      streak: newStreak,
+      bonusPoints,
+      isContinuation
+    });
+
+    return updatedUser;
+  };
+
+  // Check and process Daily Login Streak on mount for returning session
+  useEffect(() => {
+    if (currentUser) {
+      const todayStr = getTodayLocalDateStr();
+      if (currentUser.lastDailyStreakRewardDate !== todayStr) {
+        const updated = checkAndAwardDailyLoginStreak(currentUser);
+        setCurrentUser(updated);
+      }
+    }
+  }, []);
+
+  // Auto-dismiss the daily streak celebration banner after 8 seconds
+  useEffect(() => {
+    if (dailyStreakRewardNotification) {
+      const timer = setTimeout(() => {
+        setDailyStreakRewardNotification(null);
+      }, 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [dailyStreakRewardNotification]);
+
   const handleLoginSuccess = (user: UserAccount) => {
-    setCurrentUser(user);
+    const processedUser = checkAndAwardDailyLoginStreak(user);
+    setCurrentUser(processedUser);
     // Explicit user request: show up as soon as someone logs into this website
-    const alreadyAgreed = localStorage.getItem(`haris_rules_agreed_${user.username}`) === 'true';
+    const alreadyAgreed = localStorage.getItem(`haris_rules_agreed_${processedUser.username}`) === 'true';
     setHasAgreedTerms(alreadyAgreed);
   };
 
@@ -409,7 +495,7 @@ export default function App() {
       {/* Classroom Stealth Disguise Overlay (Panic Mask) */}
       <DisguiseOverlay
         isActive={isStealthActive}
-        disguiseType="google_docs"
+        disguiseType={stealthDisguiseType}
         onExit={() => setIsStealthActive(false)}
       />
 
@@ -493,6 +579,8 @@ export default function App() {
           onOpenYouTubeModal={() => setIsYouTubeModalOpen(true)}
           onOpenTokenPacks={() => setIsTokenPacksOpen(true)}
           onOpenSignIn={() => handleSignOut()}
+          onOpenDailyStreak={() => setIsDailyStreakModalOpen(true)}
+          onOpenGoogleSearch={() => setIsGoogleSearchOpen(true)}
         />
 
         <main className="flex-1">
@@ -1075,6 +1163,8 @@ export default function App() {
           setTargetVipGame(null);
           setIsVipModalOpen(true);
         }}
+        onOpenDailyStreak={() => setIsDailyStreakModalOpen(true)}
+        onOpenGoogleSearch={() => setIsGoogleSearchOpen(true)}
       />
 
       {/* Owner Admin Analytics & Graphs Panel (Haris Only) */}
@@ -1161,6 +1251,89 @@ export default function App() {
         currentUser={currentUser}
         onUserUpdated={(u) => setCurrentUser(u)}
         onOpenSignIn={() => handleSignOut()}
+      />
+
+      {/* Daily Login Streak Progression Modal */}
+      <DailyStreakModal
+        isOpen={isDailyStreakModalOpen}
+        onClose={() => setIsDailyStreakModalOpen(false)}
+        currentUser={currentUser}
+        onClaimToday={() => {
+          if (currentUser) {
+            const updated = checkAndAwardDailyLoginStreak(currentUser);
+            setCurrentUser(updated);
+          }
+        }}
+      />
+
+      {/* Daily Login Streak Reward Toast / Celebration Banner */}
+      {dailyStreakRewardNotification && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-sm sm:max-w-md w-full p-4 rounded-2xl bg-gradient-to-br from-[#0a1128] via-[#1a0f05] to-[#070e24] border-2 border-orange-500/70 shadow-2xl shadow-orange-950/80 backdrop-blur-xl animate-fadeIn pointer-events-auto">
+          <div className="flex items-start gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-orange-600 via-amber-500 to-yellow-400 p-0.5 shadow-lg shadow-orange-500/30 shrink-0 flex items-center justify-center">
+              <div className="w-full h-full bg-[#0a0814] rounded-[10px] flex items-center justify-center">
+                <Flame className="w-6 h-6 text-orange-400 fill-orange-400 animate-pulse" />
+              </div>
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-black uppercase tracking-wider bg-orange-500/20 text-orange-300 border border-orange-500/40">
+                  {dailyStreakRewardNotification.isContinuation ? 'Streak Maintained!' : 'Daily Streak Started!'}
+                </span>
+                <button
+                  onClick={() => setDailyStreakRewardNotification(null)}
+                  className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                  title="Dismiss"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <h4 className="text-base font-black text-white font-display mt-1 flex items-center gap-1.5">
+                <span>Day {dailyStreakRewardNotification.streak} Login Streak!</span>
+                <span className="text-orange-400">🔥</span>
+              </h4>
+
+              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                You earned <strong className="text-amber-300 font-mono font-bold">+{dailyStreakRewardNotification.bonusPoints} Penguin Points</strong> for returning to Haris Game Center today!
+              </p>
+
+              <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
+                <span className="text-slate-400">
+                  Tomorrow: <strong className="text-orange-300">+{calculateDailyStreakRewardPoints(dailyStreakRewardNotification.streak + 1, currentUser?.vipTier)} Pts</strong>
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => {
+                      setDailyStreakRewardNotification(null);
+                      setIsDailyStreakModalOpen(true);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[11px] transition-colors cursor-pointer"
+                  >
+                    View All
+                  </button>
+                  <button
+                    onClick={() => setDailyStreakRewardNotification(null)}
+                    className="px-3 py-1 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-bold text-[11px] transition-transform transform active:scale-95 shadow-md shadow-orange-500/20 cursor-pointer"
+                  >
+                    Claim &amp; Play!
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Built-In Google Search Engine Modal */}
+      <GoogleSearchModal
+        isOpen={isGoogleSearchOpen}
+        onClose={() => setIsGoogleSearchOpen(false)}
+        onTriggerGoogleDisguise={() => {
+          setStealthDisguiseType('google_search');
+          setIsStealthActive(true);
+        }}
       />
     </div>
   );

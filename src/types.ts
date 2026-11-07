@@ -123,6 +123,9 @@ export interface UserAccount {
   isTrial?: boolean;
   trialStartedAt?: string;
   trialExpiresAt?: string;
+  // Daily Login Streak System
+  dailyLoginStreak?: number;
+  lastDailyStreakRewardDate?: string;
 }
 
 export interface TokenPack {
@@ -163,7 +166,7 @@ export interface PabloJoke {
   punchline: string;
 }
 
-export type DisguiseType = 'google_docs' | 'wikipedia' | 'canvas_lms' | 'calculator';
+export type DisguiseType = 'google_docs' | 'wikipedia' | 'canvas_lms' | 'calculator' | 'google_search';
 
 export interface StealthConfig {
   isActive: boolean;
